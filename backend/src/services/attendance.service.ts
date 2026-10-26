@@ -290,3 +290,20 @@ export async function getAttendanceHistory(
 
   return attendance;
 }
+
+export async function getTodayAttendance(
+  employeeId: string
+) {
+  const attendanceDate = new Date();
+
+  attendanceDate.setHours(0, 0, 0, 0);
+
+  return prisma.attendance.findUnique({
+    where: {
+      employeeId_attendanceDate: {
+        employeeId,
+        attendanceDate,
+      },
+    },
+  });
+}

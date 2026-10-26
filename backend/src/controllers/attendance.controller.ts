@@ -6,6 +6,7 @@ import {
   punchIn,
   punchOut,
   getAttendanceHistory,
+  getTodayAttendance,
 } from "../services/attendance.service";
 
 export async function punchInController(
@@ -339,6 +340,40 @@ export async function getAttendanceHistoryController(
   } catch (error) {
     console.error(
       "Get attendance history error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+export async function getTodayAttendanceController(
+  req: AuthenticatedRequest,
+  res: Response
+) {
+  try {
+    const employeeId = req.employee?.employeeId;
+
+    if (!employeeId) {
+      return res.status(401).json({
+        success: false,
+        message: "Employee authentication required",
+      });
+    }
+
+    const attendance =
+      await getTodayAttendance(employeeId);
+
+    return res.status(200).json({
+      success: true,
+      attendance,
+    });
+  } catch (error) {
+    console.error(
+      "Get today's attendance error:",
       error
     );
 

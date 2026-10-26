@@ -1,11 +1,19 @@
 import { Request, Response } from "express";
+
+import {
+  AuthenticatedRequest,
+} from "../middleware/auth.middleware";
+
 import {
   createEmployee,
   getAllEmployees,
   getEmployeeById,
   updateEmployeeStatus,
 } from "../services/employee.service";
-import { AuthenticatedAdminRequest } from "../middleware/adminAuth.middleware";
+
+import {
+  AuthenticatedAdminRequest,
+} from "../middleware/adminAuth.middleware";
 
 export async function createEmployeeController(
   req: AuthenticatedAdminRequest,
@@ -224,6 +232,49 @@ export async function updateEmployeeStatusController(
 
     console.error(
       "Update employee status error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+export async function getEmployeeProfileController(
+  req: AuthenticatedRequest,
+  res: Response
+) {
+  try {
+    const employeeId = req.employee?.employeeId;
+
+    if (!employeeId) {
+      return res.status(401).json({
+        success: false,
+        message: "Employee authentication required",
+      });
+    }
+
+    const employee = await getEmployeeById(employeeId);
+
+    return res.status(200).json({
+      success: true,
+      employee,
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Employee not found"
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    console.error(
+      "Get employee profile error:",
       error
     );
 

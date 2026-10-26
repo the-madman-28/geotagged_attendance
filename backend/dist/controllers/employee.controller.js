@@ -4,6 +4,7 @@ exports.createEmployeeController = createEmployeeController;
 exports.getAllEmployeesController = getAllEmployeesController;
 exports.getEmployeeByIdController = getEmployeeByIdController;
 exports.updateEmployeeStatusController = updateEmployeeStatusController;
+exports.getEmployeeProfileController = getEmployeeProfileController;
 const employee_service_1 = require("../services/employee.service");
 async function createEmployeeController(req, res) {
     try {
@@ -175,6 +176,36 @@ async function updateEmployeeStatusController(req, res) {
             });
         }
         console.error("Update employee status error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+}
+async function getEmployeeProfileController(req, res) {
+    try {
+        const employeeId = req.employee?.employeeId;
+        if (!employeeId) {
+            return res.status(401).json({
+                success: false,
+                message: "Employee authentication required",
+            });
+        }
+        const employee = await (0, employee_service_1.getEmployeeById)(employeeId);
+        return res.status(200).json({
+            success: true,
+            employee,
+        });
+    }
+    catch (error) {
+        if (error instanceof Error &&
+            error.message === "Employee not found") {
+            return res.status(404).json({
+                success: false,
+                message: "Employee not found",
+            });
+        }
+        console.error("Get employee profile error:", error);
         return res.status(500).json({
             success: false,
             message: "Internal server error",

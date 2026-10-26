@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const adminAuth_middleware_1 = require("../middleware/adminAuth.middleware");
+const adminAttendance_controller_1 = require("../controllers/adminAttendance.controller");
+const router = (0, express_1.Router)();
+router.get("/today", adminAuth_middleware_1.adminAuthMiddleware, adminAttendance_controller_1.getTodayAttendanceController);
+router.get("/employee/:employeeId", adminAuth_middleware_1.adminAuthMiddleware, adminAttendance_controller_1.getAttendanceByEmployeeController);
+router.get("/out-of-range", adminAuth_middleware_1.adminAuthMiddleware, adminAttendance_controller_1.getOutOfRangeAttendanceController);
+exports.default = router;

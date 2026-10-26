@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const adminAuth_middleware_1 = require("../middleware/adminAuth.middleware");
+const workplace_controller_1 = require("../controllers/workplace.controller");
+const router = (0, express_1.Router)();
+router.post("/", adminAuth_middleware_1.adminAuthMiddleware, workplace_controller_1.createWorkplaceController);
+router.get("/", adminAuth_middleware_1.adminAuthMiddleware, workplace_controller_1.getWorkplaceController);
+router.put("/", adminAuth_middleware_1.adminAuthMiddleware, workplace_controller_1.updateWorkplaceController);
+exports.default = router;

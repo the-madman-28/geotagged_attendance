@@ -5,6 +5,7 @@ import {
   punchInController,
   punchOutController,
   getAttendanceHistoryController,
+  getTodayAttendanceController,
 } from "../controllers/attendance.controller";
 
 const router = Router();
@@ -25,6 +26,12 @@ router.get(
   "/history",
   employeeAuthMiddleware,
   getAttendanceHistoryController
+);
+
+router.get(
+  "/today",
+  employeeAuthMiddleware,
+  getTodayAttendanceController
 );
 
 export default router;

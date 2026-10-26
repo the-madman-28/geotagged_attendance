@@ -94,3 +94,74 @@ export async function getWorkplace() {
 
   return workplace;
 }
+
+interface UpdateWorkplaceData {
+  name: string;
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+  maximumSessionHours: number;
+}
+
+export async function updateWorkplace(
+  data: UpdateWorkplaceData
+) {
+  const name = data.name.trim();
+
+  if (!name) {
+    throw new Error("Workplace name is required");
+  }
+
+  if (
+    data.latitude < -90 ||
+    data.latitude > 90
+  ) {
+    throw new Error("Invalid latitude");
+  }
+
+  if (
+    data.longitude < -180 ||
+    data.longitude > 180
+  ) {
+    throw new Error("Invalid longitude");
+  }
+
+  if (data.radiusMeters <= 0) {
+    throw new Error(
+      "Radius must be greater than zero"
+    );
+  }
+
+  if (data.maximumSessionHours <= 0) {
+    throw new Error(
+      "Maximum session hours must be greater than zero"
+    );
+  }
+
+  const workplace = await prisma.workplace.findFirst({
+    where: {
+      isActive: true,
+    },
+  });
+
+  if (!workplace) {
+    throw new Error("No active workplace configured");
+  }
+
+  const updatedWorkplace =
+    await prisma.workplace.update({
+      where: {
+        id: workplace.id,
+      },
+      data: {
+        name,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        radiusMeters: data.radiusMeters,
+        maximumSessionHours:
+          data.maximumSessionHours,
+      },
+    });
+
+  return updatedWorkplace;
+}
