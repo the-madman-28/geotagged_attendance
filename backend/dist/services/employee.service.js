@@ -1,0 +1,92 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createEmployee = createEmployee;
+exports.getAllEmployees = getAllEmployees;
+exports.getEmployeeById = getEmployeeById;
+exports.updateEmployeeStatus = updateEmployeeStatus;
+const prisma_1 = __importDefault(require("../config/prisma"));
+async function createEmployee(data) {
+    const employeeId = data.employeeId.trim();
+    const name = data.name.trim();
+    if (!employeeId) {
+        throw new Error("Employee ID is required");
+    }
+    if (!name) {
+        throw new Error("Employee name is required");
+    }
+    const existingEmployee = await prisma_1.default.employee.findUnique({
+        where: {
+            employeeId,
+        },
+    });
+    if (existingEmployee) {
+        throw new Error("Employee ID already exists");
+    }
+    const employee = await prisma_1.default.employee.create({
+        data: {
+            employeeId,
+            name,
+            isActive: true,
+        },
+    });
+    return employee;
+}
+async function getAllEmployees() {
+    const employees = await prisma_1.default.employee.findMany({
+        orderBy: {
+            employeeId: "asc",
+        },
+        select: {
+            employeeId: true,
+            name: true,
+            isActive: true,
+            createdAt: true,
+        },
+    });
+    return employees;
+}
+async function getEmployeeById(employeeId) {
+    const employee = await prisma_1.default.employee.findUnique({
+        where: {
+            employeeId,
+        },
+        select: {
+            employeeId: true,
+            name: true,
+            isActive: true,
+            createdAt: true,
+        },
+    });
+    if (!employee) {
+        throw new Error("Employee not found");
+    }
+    return employee;
+}
+async function updateEmployeeStatus(employeeId, isActive) {
+    const employee = await prisma_1.default.employee.findUnique({
+        where: {
+            employeeId,
+        },
+    });
+    if (!employee) {
+        throw new Error("Employee not found");
+    }
+    const updatedEmployee = await prisma_1.default.employee.update({
+        where: {
+            employeeId,
+        },
+        data: {
+            isActive,
+        },
+        select: {
+            employeeId: true,
+            name: true,
+            isActive: true,
+            createdAt: true,
+        },
+    });
+    return updatedEmployee;
+}

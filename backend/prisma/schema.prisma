@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AttendanceStatus {
+  IN_RANGE
+  OUT_OF_RANGE
+}
+
+model Admin {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@map("admins")
+}
+
+model Employee {
+  employeeId String   @id
+  name       String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  attendance Attendance[]
+
+  @@map("employees")
+}
+
+model Workplace {
+  id                  String   @id @default(uuid())
+  name                String
+  latitude            Decimal  @db.Decimal(10, 7)
+  longitude           Decimal  @db.Decimal(10, 7)
+  radiusMeters        Decimal  @db.Decimal(10, 2)
+  maximumSessionHours Decimal  @db.Decimal(5, 2)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+
+  attendance Attendance[]
+
+  @@map("workplaces")
+}
+
+model Attendance {
+  id             String   @id @default(uuid())
+  employeeId     String
+  workplaceId    String
+  attendanceDate DateTime
+
+  // Punch In
+  punchIn          DateTime
+  punchInLatitude  Decimal          @db.Decimal(10, 7)
+  punchInLongitude Decimal          @db.Decimal(10, 7)
+  punchInAccuracy  Decimal          @db.Decimal(10, 2)
+  punchInDistance  Decimal          @db.Decimal(10, 2)
+  punchInStatus    AttendanceStatus
+  punchInReason    String?
+
+  // Punch Out
+  punchOut          DateTime?
+  punchOutLatitude  Decimal?          @db.Decimal(10, 7)
+  punchOutLongitude Decimal?          @db.Decimal(10, 7)
+  punchOutAccuracy  Decimal?          @db.Decimal(10, 2)
+  punchOutDistance  Decimal?          @db.Decimal(10, 2)
+  punchOutStatus    AttendanceStatus?
+  punchOutReason    String?
+
+  // Automatic Punch Out
+  autoPunchedOut Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  // Relationships
+  employee  Employee  @relation(fields: [employeeId], references: [employeeId])
+  workplace Workplace @relation(fields: [workplaceId], references: [id])
+
+  // Constraints / Indexes
+  @@unique([employeeId, attendanceDate])
+  @@index([employeeId])
+  @@index([workplaceId])
+  @@index([attendanceDate])
+  @@map("attendance")
+}
