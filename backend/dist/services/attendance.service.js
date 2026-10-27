@@ -5,12 +5,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.punchIn = punchIn;
 exports.punchOut = punchOut;
+exports.editPunchIn = editPunchIn;
+exports.editPunchOut = editPunchOut;
 exports.getAttendanceHistory = getAttendanceHistory;
+exports.getTodayAttendance = getTodayAttendance;
 const prisma_1 = __importDefault(require("../config/prisma"));
 const geolocation_1 = require("../utils/geolocation");
 async function punchIn(data) {
     const { employeeId, latitude, longitude, accuracy, reason, } = data;
-    // 1. Check employee
     const employee = await prisma_1.default.employee.findUnique({
         where: {
             employeeId,
@@ -22,7 +24,6 @@ async function punchIn(data) {
     if (!employee.isActive) {
         throw new Error("Employee account is inactive");
     }
-    // 2. Get active workplace
     const workplace = await prisma_1.default.workplace.findFirst({
         where: {
             isActive: true,
@@ -31,21 +32,16 @@ async function punchIn(data) {
     if (!workplace) {
         throw new Error("No active workplace configured");
     }
-    // 3. Calculate distance
     const distance = (0, geolocation_1.calculateDistance)(latitude, longitude, Number(workplace.latitude), Number(workplace.longitude));
-    // 4. Determine attendance status
     const isInRange = distance <= Number(workplace.radiusMeters);
     const status = isInRange
         ? "IN_RANGE"
         : "OUT_OF_RANGE";
-    // 5. Out-of-range attendance requires a reason
     if (!isInRange && !reason?.trim()) {
         throw new Error("Reason is required when punching in outside the workplace");
     }
-    // 6. Get today's date
     const attendanceDate = new Date();
     attendanceDate.setHours(0, 0, 0, 0);
-    // 7. Check whether employee already punched in today
     const existingAttendance = await prisma_1.default.attendance.findUnique({
         where: {
             employeeId_attendanceDate: {
@@ -57,7 +53,6 @@ async function punchIn(data) {
     if (existingAttendance) {
         throw new Error("Attendance has already been marked for today");
     }
-    // 8. Create attendance record
     const attendance = await prisma_1.default.attendance.create({
         data: {
             employeeId,
@@ -84,7 +79,6 @@ async function punchIn(data) {
 }
 async function punchOut(data) {
     const { employeeId, latitude, longitude, accuracy, reason, } = data;
-    // 1. Check employee
     const employee = await prisma_1.default.employee.findUnique({
         where: {
             employeeId,
@@ -96,7 +90,6 @@ async function punchOut(data) {
     if (!employee.isActive) {
         throw new Error("Employee account is inactive");
     }
-    // 2. Get today's attendance
     const attendanceDate = new Date();
     attendanceDate.setHours(0, 0, 0, 0);
     const attendance = await prisma_1.default.attendance.findUnique({
@@ -107,15 +100,12 @@ async function punchOut(data) {
             },
         },
     });
-    // 3. Employee must have punched in first
     if (!attendance) {
         throw new Error("Attendance has not been marked for today");
     }
-    // 4. Employee cannot punch out twice
     if (attendance.punchOut) {
         throw new Error("Attendance has already been punched out");
     }
-    // 5. Get active workplace
     const workplace = await prisma_1.default.workplace.findFirst({
         where: {
             isActive: true,
@@ -124,18 +114,14 @@ async function punchOut(data) {
     if (!workplace) {
         throw new Error("No active workplace configured");
     }
-    // 6. Calculate distance from workplace
     const distance = (0, geolocation_1.calculateDistance)(latitude, longitude, Number(workplace.latitude), Number(workplace.longitude));
-    // 7. Determine punch-out status
     const isInRange = distance <= Number(workplace.radiusMeters);
     const status = isInRange
         ? "IN_RANGE"
         : "OUT_OF_RANGE";
-    // 8. Out-of-range punch-out requires a reason
     if (!isInRange && !reason?.trim()) {
         throw new Error("Reason is required when punching out outside the workplace");
     }
-    // 9. Update attendance
     const updatedAttendance = await prisma_1.default.attendance.update({
         where: {
             id: attendance.id,
@@ -160,6 +146,231 @@ async function punchOut(data) {
         status,
     };
 }
+/**
+ * Returns today's attendance date.
+ *
+ * The attendanceDate field is stored at midnight,
+ * so all edit operations use the same calendar-day
+ * comparison.
+ */
+function getTodayDate() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+}
+/**
+ * Checks whether a Date belongs to today.
+ */
+function isSameCalendarDay(date, today) {
+    return (date.getFullYear() === today.getFullYear() &&
+        date.getMonth() === today.getMonth() &&
+        date.getDate() === today.getDate());
+}
+/**
+ * Validates an edited timestamp.
+ *
+ * The employee may only select a time that belongs
+ * to today's calendar day.
+ */
+function validateEditedTimestamp(value, fieldName) {
+    if (!value) {
+        return new Date();
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        throw new Error(`Invalid ${fieldName} time`);
+    }
+    const today = new Date();
+    if (!isSameCalendarDay(parsed, today)) {
+        throw new Error("Attendance can only be edited on the same day");
+    }
+    return parsed;
+}
+/**
+ * EDIT PUNCH IN
+ *
+ * Only today's attendance can be edited.
+ *
+ * GPS is captured again and workplace distance
+ * is recalculated.
+ */
+async function editPunchIn(data) {
+    const { employeeId, latitude, longitude, accuracy, reason, punchIn, } = data;
+    // 1. Check employee
+    const employee = await prisma_1.default.employee.findUnique({
+        where: {
+            employeeId,
+        },
+    });
+    if (!employee) {
+        throw new Error("Employee not found");
+    }
+    if (!employee.isActive) {
+        throw new Error("Employee account is inactive");
+    }
+    // 2. Get today's attendance
+    const attendanceDate = getTodayDate();
+    const attendance = await prisma_1.default.attendance.findUnique({
+        where: {
+            employeeId_attendanceDate: {
+                employeeId,
+                attendanceDate,
+            },
+        },
+    });
+    if (!attendance) {
+        throw new Error("Attendance has not been marked for today");
+    }
+    // 3. Automatically closed attendance cannot be edited
+    if (attendance.autoPunchedOut) {
+        throw new Error("Attendance cannot be edited after automatic punch out");
+    }
+    // 4. Validate edited timestamp
+    const updatedPunchIn = validateEditedTimestamp(punchIn, "punch in");
+    // 5. Get active workplace
+    const workplace = await prisma_1.default.workplace.findFirst({
+        where: {
+            isActive: true,
+        },
+    });
+    if (!workplace) {
+        throw new Error("No active workplace configured");
+    }
+    // 6. Recalculate GPS distance
+    const distance = (0, geolocation_1.calculateDistance)(latitude, longitude, Number(workplace.latitude), Number(workplace.longitude));
+    // 7. Determine new status
+    const isInRange = distance <= Number(workplace.radiusMeters);
+    const status = isInRange
+        ? "IN_RANGE"
+        : "OUT_OF_RANGE";
+    // 8. Require reason if outside workplace
+    if (!isInRange && !reason?.trim()) {
+        throw new Error("Reason is required when editing punch in outside the workplace");
+    }
+    // 9. Update punch-in
+    const updatedAttendance = await prisma_1.default.attendance.update({
+        where: {
+            id: attendance.id,
+        },
+        data: {
+            punchIn: updatedPunchIn,
+            punchInLatitude: latitude,
+            punchInLongitude: longitude,
+            punchInAccuracy: accuracy,
+            punchInDistance: distance,
+            punchInStatus: status,
+            punchInReason: isInRange
+                ? null
+                : reason.trim(),
+        },
+    });
+    return {
+        attendance: updatedAttendance,
+        distance,
+        radiusMeters: Number(workplace.radiusMeters),
+        status,
+    };
+}
+/**
+ * EDIT PUNCH OUT
+ *
+ * Only today's attendance can be edited.
+ *
+ * GPS is captured again and workplace distance
+ * is recalculated.
+ */
+async function editPunchOut(data) {
+    const { employeeId, latitude, longitude, accuracy, reason, punchOut, } = data;
+    // 1. Check employee
+    const employee = await prisma_1.default.employee.findUnique({
+        where: {
+            employeeId,
+        },
+    });
+    if (!employee) {
+        throw new Error("Employee not found");
+    }
+    if (!employee.isActive) {
+        throw new Error("Employee account is inactive");
+    }
+    // 2. Get today's attendance
+    const attendanceDate = getTodayDate();
+    const attendance = await prisma_1.default.attendance.findUnique({
+        where: {
+            employeeId_attendanceDate: {
+                employeeId,
+                attendanceDate,
+            },
+        },
+    });
+    if (!attendance) {
+        throw new Error("Attendance has not been marked for today");
+    }
+    // 3. Punch out must already exist
+    if (!attendance.punchOut) {
+        throw new Error("Punch out has not been marked");
+    }
+    // 4. Automatically closed attendance cannot be edited
+    if (attendance.autoPunchedOut) {
+        throw new Error("Attendance was automatically punched out and cannot be edited");
+    }
+    // 5. Validate edited timestamp
+    const updatedPunchOut = validateEditedTimestamp(punchOut, "punch out");
+    // 6. Prevent punch-out from being before punch-in
+    if (updatedPunchOut.getTime() <
+        attendance.punchIn.getTime()) {
+        throw new Error("Punch out time cannot be before punch in time");
+    }
+    // 7. Get active workplace
+    const workplace = await prisma_1.default.workplace.findFirst({
+        where: {
+            isActive: true,
+        },
+    });
+    if (!workplace) {
+        throw new Error("No active workplace configured");
+    }
+    // 8. Recalculate GPS distance
+    const distance = (0, geolocation_1.calculateDistance)(latitude, longitude, Number(workplace.latitude), Number(workplace.longitude));
+    // 9. Determine new status
+    const isInRange = distance <= Number(workplace.radiusMeters);
+    const status = isInRange
+        ? "IN_RANGE"
+        : "OUT_OF_RANGE";
+    // 10. Require reason if outside workplace
+    if (!isInRange && !reason?.trim()) {
+        throw new Error("Reason is required when editing punch out outside the workplace");
+    }
+    // 11. Update punch-out
+    const updatedAttendance = await prisma_1.default.attendance.update({
+        where: {
+            id: attendance.id,
+        },
+        data: {
+            punchOut: updatedPunchOut,
+            punchOutLatitude: latitude,
+            punchOutLongitude: longitude,
+            punchOutAccuracy: accuracy,
+            punchOutDistance: distance,
+            punchOutStatus: status,
+            punchOutReason: isInRange
+                ? null
+                : reason.trim(),
+            autoPunchedOut: false,
+        },
+    });
+    return {
+        attendance: updatedAttendance,
+        distance,
+        radiusMeters: Number(workplace.radiusMeters),
+        status,
+    };
+}
+/*
+ * ============================================================
+ * ATTENDANCE HISTORY
+ * ============================================================
+ */
 async function getAttendanceHistory(employeeId) {
     const attendance = await prisma_1.default.attendance.findMany({
         where: {
@@ -198,4 +409,15 @@ async function getAttendanceHistory(employeeId) {
         },
     });
     return attendance;
+}
+async function getTodayAttendance(employeeId) {
+    const attendanceDate = getTodayDate();
+    return prisma_1.default.attendance.findUnique({
+        where: {
+            employeeId_attendanceDate: {
+                employeeId,
+                attendanceDate,
+            },
+        },
+    });
 }

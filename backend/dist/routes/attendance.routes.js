@@ -6,5 +6,8 @@ const attendance_controller_1 = require("../controllers/attendance.controller");
 const router = (0, express_1.Router)();
 router.post("/punch-in", auth_middleware_1.employeeAuthMiddleware, attendance_controller_1.punchInController);
 router.post("/punch-out", auth_middleware_1.employeeAuthMiddleware, attendance_controller_1.punchOutController);
+router.patch("/punch-in", auth_middleware_1.employeeAuthMiddleware, attendance_controller_1.editPunchInController);
+router.patch("/punch-out", auth_middleware_1.employeeAuthMiddleware, attendance_controller_1.editPunchOutController);
 router.get("/history", auth_middleware_1.employeeAuthMiddleware, attendance_controller_1.getAttendanceHistoryController);
+router.get("/today", auth_middleware_1.employeeAuthMiddleware, attendance_controller_1.getTodayAttendanceController);
 exports.default = router;

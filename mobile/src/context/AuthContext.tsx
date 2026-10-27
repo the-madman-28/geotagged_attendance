@@ -13,14 +13,19 @@ import {
   saveAuthData,
 } from "../services/storage.service";
 
+import {
+  setSessionExpiredHandler,
+  clearSessionExpiredHandler,
+} from "../services/authSession.service";
+
 import { employeeLogin } from "../api/auth";
 import { Employee } from "../types/auth";
 
 interface AuthContextValue {
-  employee: Employee | null;
   token: string | null;
+  employee: Employee | null;
   loading: boolean;
-  login: (employeeId: string) => Promise<void>;
+  employeeLogin: (employeeId: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -45,6 +50,19 @@ export function AuthProvider({
   useEffect(() => {
     loadStoredAuth();
   }, []);
+
+  useEffect(() => {
+  setSessionExpiredHandler(async () => {
+    await clearAuthData();
+
+    setToken(null);
+    setEmployee(null);
+  });
+
+  return () => {
+    clearSessionExpiredHandler();
+  };
+}, []);
 
   async function loadStoredAuth() {
     try {
@@ -96,7 +114,7 @@ export function AuthProvider({
         employee,
         token,
         loading,
-        login,
+        employeeLogin: login,
         logout,
       }}
     >

@@ -1,9 +1,20 @@
+// mobile/src/api/client.ts
+
+import { notifySessionExpired } from "../services/authSession.service";
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 if (!API_URL) {
-  throw new Error(
-    "EXPO_PUBLIC_API_URL is not configured"
-  );
+  throw new Error("EXPO_PUBLIC_API_URL is not configured");
+}
+
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
 }
 
 interface ApiRequestOptions {
@@ -42,26 +53,26 @@ export async function apiRequest<T>(
     }
   );
 
-  let data: unknown;
+  let data: any;
 
   try {
     data = await response.json();
   } catch {
-    throw new Error(
-      `Server returned an invalid response (${response.status})`
+    throw new ApiError(
+      `Invalid server response (${response.status})`,
+      response.status
     );
   }
 
   if (!response.ok) {
-    const message =
-      typeof data === "object" &&
-      data !== null &&
-      "message" in data &&
-      typeof data.message === "string"
-        ? data.message
-        : "Request failed";
+    if (response.status === 401 && token) {
+      notifySessionExpired();
+    }
 
-    throw new Error(message);
+    throw new ApiError(
+      data?.message || "Request failed",
+      response.status
+    );
   }
 
   return data as T;

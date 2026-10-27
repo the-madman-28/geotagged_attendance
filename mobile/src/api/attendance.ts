@@ -52,11 +52,6 @@ export interface PunchOutResponse {
   attendance: AttendanceRecord;
 }
 
-export interface AttendanceHistoryResponse {
-  success: boolean;
-  attendance: AttendanceRecord[];
-}
-
 export async function punchIn(
   token: string,
   data: PunchInRequest
@@ -83,6 +78,11 @@ export async function punchOut(
       body: data,
     }
   );
+}
+
+export interface AttendanceHistoryResponse {
+  success: boolean;
+  attendance: AttendanceRecord[];
 }
 
 export async function getAttendanceHistory(
