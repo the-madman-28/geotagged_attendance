@@ -25,7 +25,9 @@ interface AuthContextValue {
   token: string | null;
   employee: Employee | null;
   loading: boolean;
-  employeeLogin: (employeeId: string) => Promise<void>;
+  employeeLogin: (
+    employeeId: string
+  ) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -45,24 +47,25 @@ export function AuthProvider({
   const [token, setToken] =
     useState<string | null>(null);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
     loadStoredAuth();
   }, []);
 
   useEffect(() => {
-  setSessionExpiredHandler(async () => {
-    await clearAuthData();
+    setSessionExpiredHandler(async () => {
+      await clearAuthData();
 
-    setToken(null);
-    setEmployee(null);
-  });
+      setToken(null);
+      setEmployee(null);
+    });
 
-  return () => {
-    clearSessionExpiredHandler();
-  };
-}, []);
+    return () => {
+      clearSessionExpiredHandler();
+    };
+  }, []);
 
   async function loadStoredAuth() {
     try {
@@ -90,7 +93,8 @@ export function AuthProvider({
   }
 
   async function login(employeeId: string) {
-    const result = await employeeLogin(employeeId);
+    const result =
+      await employeeLogin(employeeId);
 
     await saveAuthData(
       result.token,

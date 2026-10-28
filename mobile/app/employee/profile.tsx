@@ -1,5 +1,3 @@
-// mobile/app/employee/profile.tsx
-
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -14,6 +12,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "../../src/context/AuthContext";
 import { getEmployeeProfile } from "../../src/api/employee";
+
+import AppBackground from "../../src/components/AppBackground";
+import AppHeader from "../../src/components/AppHeader";
+import AppCard from "../../src/components/AppCard";
+import AppFooter from "../../src/components/AppFooter";
 
 export default function ProfileScreen() {
   const { token, employee, logout } = useAuth();
@@ -63,163 +66,223 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.back}>
-            ← Back
-          </Text>
-        </Pressable>
-
-        <Text style={styles.title}>
-          Profile
-        </Text>
-
-        <View style={styles.spacer} />
-      </View>
-
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" />
-        </View>
-      ) : error ? (
-        <View style={styles.center}>
-          <Text style={styles.error}>
-            {error}
-          </Text>
-
-          <Pressable
-            onPress={loadProfile}
-            style={styles.retry}
-          >
-            <Text style={styles.retryText}>
-              Try Again
-            </Text>
-          </Pressable>
-        </View>
-      ) : (
+    <AppBackground>
+      <SafeAreaView style={styles.safeArea}>
         <ScrollView
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {profile?.name
-                ?.charAt(0)
-                .toUpperCase() || "E"}
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Text style={styles.backIcon}>‹</Text>
+            <Text style={styles.backText}>
+              Back
             </Text>
-          </View>
+          </Pressable>
 
-          <Text style={styles.name}>
-            {profile?.name}
-          </Text>
+          <AppHeader
+            title="My Profile"
+            subtitle="Your employee information"
+          />
 
-          <View style={styles.card}>
-            <Text style={styles.section}>
-              EMPLOYEE INFORMATION
-            </Text>
-
-            <View style={styles.row}>
-              <Text style={styles.label}>
-                Employee ID
-              </Text>
-
-              <Text style={styles.value}>
-                {profile?.employeeId}
-              </Text>
+          {loading ? (
+            <View style={styles.center}>
+              <ActivityIndicator size="large" />
             </View>
+          ) : error ? (
+            <View style={styles.center}>
+              <View style={styles.errorIcon}>
+                <Text style={styles.errorIconText}>
+                  !
+                </Text>
+              </View>
 
-            <View style={styles.divider} />
-
-            <View style={styles.row}>
-              <Text style={styles.label}>
-                Status
+              <Text style={styles.errorTitle}>
+                Unable to load profile
               </Text>
 
-              <Text
-                style={[
-                  styles.value,
-                  styles.active,
+              <Text style={styles.error}>
+                {error}
+              </Text>
+
+              <Pressable
+                onPress={loadProfile}
+                style={styles.retry}
+              >
+                <Text style={styles.retryText}>
+                  Try Again
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <>
+              <View style={styles.profileHero}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {profile?.name
+                      ?.charAt(0)
+                      .toUpperCase() || "E"}
+                  </Text>
+                </View>
+
+                <Text style={styles.name}>
+                  {profile?.name}
+                </Text>
+
+                <Text style={styles.employeeId}>
+                  {profile?.employeeId}
+                </Text>
+
+                <View style={styles.activeBadge}>
+                  <View style={styles.activeDot} />
+
+                  <Text style={styles.activeText}>
+                    {profile?.isActive === false
+                      ? "Inactive"
+                      : "Active Employee"}
+                  </Text>
+                </View>
+              </View>
+
+              <AppCard style={styles.infoCard}>
+                <Text style={styles.section}>
+                  EMPLOYEE INFORMATION
+                </Text>
+
+                <View style={styles.row}>
+                  <View>
+                    <Text style={styles.label}>
+                      Employee ID
+                    </Text>
+
+                    <Text style={styles.value}>
+                      {profile?.employeeId}
+                    </Text>
+                  </View>
+
+                  <View style={styles.smallIcon}>
+                    <Text style={styles.smallIconText}>
+                      ID
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.row}>
+                  <View>
+                    <Text style={styles.label}>
+                      Account Status
+                    </Text>
+
+                    <Text style={styles.value}>
+                      {profile?.isActive === false
+                        ? "Inactive"
+                        : "Active"}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      profile?.isActive === false &&
+                        styles.inactiveBadge,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusBadgeText,
+                        profile?.isActive === false &&
+                          styles.inactiveText,
+                      ]}
+                    >
+                      {profile?.isActive === false
+                        ? "Inactive"
+                        : "Active"}
+                    </Text>
+                  </View>
+                </View>
+              </AppCard>
+
+              <Pressable
+                onPress={() =>
+                  router.push("/employee/history")
+                }
+                style={({ pressed }) => [
+                  styles.actionCard,
+                  pressed && styles.pressed,
                 ]}
               >
-                {profile?.isActive === false
-                  ? "Inactive"
-                  : "Active"}
-              </Text>
-            </View>
-          </View>
+                <View style={styles.actionIcon}>
+                  <Text style={styles.actionIconText}>
+                    ◷
+                  </Text>
+                </View>
 
-          <Pressable
-            onPress={() =>
-              router.push("/employee/history")
-            }
-            style={styles.action}
-          >
-            <View>
-              <Text style={styles.actionTitle}>
-                Attendance History
-              </Text>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionTitle}>
+                    Attendance History
+                  </Text>
 
-              <Text style={styles.actionText}>
-                View previous attendance
-              </Text>
-            </View>
+                  <Text style={styles.actionText}>
+                    View your previous attendance
+                    records
+                  </Text>
+                </View>
 
-            <Text style={styles.arrow}>
-              ›
-            </Text>
-          </Pressable>
+                <Text style={styles.arrow}>›</Text>
+              </Pressable>
 
-          <Pressable
-            onPress={handleLogout}
-            style={styles.logout}
-          >
-            <Text style={styles.logoutText}>
-              Logout
-            </Text>
-          </Pressable>
+              <Pressable
+                onPress={handleLogout}
+                style={({ pressed }) => [
+                  styles.logout,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.logoutText}>
+                  Logout
+                </Text>
+              </Pressable>
+
+              <AppFooter />
+            </>
+          )}
         </ScrollView>
-      )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </AppBackground>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f3f4f6",
-  },
-
-  header: {
-    height: 64,
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-
-  back: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#2563eb",
-  },
-
-  title: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-  },
-
-  spacer: {
-    width: 50,
   },
 
   container: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 20,
+  },
+
+  backButton: {
+    marginHorizontal: 20,
+    marginTop: 4,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  backIcon: {
+    fontSize: 30,
+    lineHeight: 30,
+    color: "#1677B8",
+    marginRight: 5,
+  },
+
+  backText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1677B8",
   },
 
   center: {
@@ -229,132 +292,267 @@ const styles = StyleSheet.create({
     padding: 30,
   },
 
+  profileHero: {
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 20,
+  },
+
   avatar: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
-    alignSelf: "center",
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: "#1677B8",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#2563eb",
-    marginTop: 15,
+    shadowColor: "#1677B8",
+    shadowOffset: {
+      width: 0,
+      height: 7,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 5,
   },
 
   avatarText: {
+    color: "#FFFFFF",
     fontSize: 34,
     fontWeight: "800",
-    color: "#ffffff",
   },
 
   name: {
-    fontSize: 24,
+    marginTop: 13,
+    fontSize: 23,
     fontWeight: "800",
-    color: "#111827",
+    color: "#102A56",
     textAlign: "center",
-    marginTop: 14,
-    marginBottom: 24,
   },
 
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
+  employeeId: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#718096",
+  },
+
+  activeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: "#E8F8F0",
+  },
+
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#22A866",
+    marginRight: 6,
+  },
+
+  activeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#258255",
+  },
+
+  infoCard: {
+    marginHorizontal: 20,
     marginBottom: 14,
   },
 
   section: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    color: "#9ca3af",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
+    color: "#8A99AB",
     marginBottom: 16,
   },
 
   row: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
   },
 
   label: {
-    fontSize: 14,
-    color: "#6b7280",
+    fontSize: 11,
+    color: "#8A99AB",
+    marginBottom: 4,
   },
 
   value: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#111827",
+    fontWeight: "800",
+    color: "#102A56",
   },
 
-  active: {
-    color: "#16a34a",
+  smallIcon: {
+    width: 35,
+    height: 35,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#EAF6FF",
+  },
+
+  smallIconText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#1677B8",
   },
 
   divider: {
     height: 1,
-    backgroundColor: "#f0f0f0",
-    marginVertical: 16,
+    backgroundColor: "#EDF2F7",
+    marginVertical: 17,
   },
 
-  action: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: "#E8F8F0",
+  },
+
+  inactiveBadge: {
+    backgroundColor: "#FFF0F0",
+  },
+
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#258255",
+  },
+
+  inactiveText: {
+    color: "#D94A4A",
+  },
+
+  actionCard: {
+    marginHorizontal: 20,
+    marginBottom: 14,
+    padding: 17,
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 14,
+    shadowColor: "#0B4F8A",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 3,
+  },
+
+  actionIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 13,
+    backgroundColor: "#EAF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  actionIconText: {
+    color: "#1677B8",
+    fontSize: 21,
+    fontWeight: "700",
+  },
+
+  actionContent: {
+    flex: 1,
+    marginLeft: 12,
   },
 
   actionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111827",
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#102A56",
   },
 
   actionText: {
-    fontSize: 13,
-    color: "#6b7280",
     marginTop: 4,
+    fontSize: 11,
+    lineHeight: 16,
+    color: "#7B8CA3",
   },
 
   arrow: {
-    fontSize: 28,
-    color: "#9ca3af",
+    fontSize: 27,
+    color: "#AAB7C6",
+    marginLeft: 8,
   },
 
   logout: {
-    height: 52,
-    borderRadius: 10,
+    height: 50,
+    marginHorizontal: 20,
+    marginTop: 1,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#fecaca",
+    borderColor: "#FFD7D7",
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 8,
   },
 
   logoutText: {
-    color: "#dc2626",
-    fontSize: 15,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#D94A4A",
+  },
+
+  pressed: {
+    opacity: 0.8,
+  },
+
+  errorIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "#FFF0F0",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+
+  errorIconText: {
+    fontSize: 23,
+    fontWeight: "800",
+    color: "#D94A4A",
+  },
+
+  errorTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#102A56",
   },
 
   error: {
-    color: "#dc2626",
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#718096",
     textAlign: "center",
+    marginTop: 5,
     marginBottom: 16,
   },
 
   retry: {
-    backgroundColor: "#2563eb",
-    paddingHorizontal: 20,
+    backgroundColor: "#1677B8",
+    paddingHorizontal: 22,
     paddingVertical: 11,
-    borderRadius: 9,
+    borderRadius: 11,
   },
 
   retryText: {
-    color: "#ffffff",
-    fontWeight: "700",
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
   },
 });

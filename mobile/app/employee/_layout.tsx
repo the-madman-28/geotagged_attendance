@@ -5,6 +5,10 @@ export default function EmployeeLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
+        animation: "fade",
+        contentStyle: {
+          backgroundColor: "#F8FBFF",
+        },
       }}
     />
   );

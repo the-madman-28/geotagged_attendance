@@ -1,3 +1,4 @@
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -9,7 +10,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
 
 import {
   AdminDashboardSummary,
@@ -73,14 +73,20 @@ export default function AdminDashboardScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.center}>
-          <ActivityIndicator
-            size="large"
-            color="#2563eb"
-          />
+        <View style={styles.loadingScreen}>
+          <View style={styles.loadingBadge}>
+            <ActivityIndicator
+              size="small"
+              color="#1688F7"
+            />
+          </View>
 
-          <Text style={styles.loadingText}>
-            Loading dashboard...
+          <Text style={styles.loadingTitle}>
+            Loading dashboard
+          </Text>
+
+          <Text style={styles.loadingSubtitle}>
+            Preparing your attendance overview...
           </Text>
         </View>
       </SafeAreaView>
@@ -89,97 +95,174 @@ export default function AdminDashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <View style={styles.backgroundGlow} />
+      <View style={styles.backgroundGlowSmall} />
+
       <ScrollView
         contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadDashboard(true)}
+            tintColor="#1688F7"
           />
         }
       >
+        {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerContent}>
+            <View style={styles.adminLabel}>
+              <View style={styles.adminDot} />
+
+              <Text style={styles.adminLabelText}>
+                ADMIN PORTAL
+              </Text>
+            </View>
+
             <Text style={styles.title}>
-              Admin Dashboard
+              Dashboard
             </Text>
 
-            <Text style={styles.subtitle}>
+            <Text
+              style={styles.subtitle}
+              numberOfLines={1}
+            >
               {admin?.email || "Administrator"}
             </Text>
           </View>
 
           <Pressable
-            style={styles.logoutButton}
+            style={({ pressed }) => [
+              styles.logoutButton,
+              pressed && styles.logoutButtonPressed,
+            ]}
             onPress={handleLogout}
           >
+            <Text style={styles.logoutIcon}>↗</Text>
+
             <Text style={styles.logoutText}>
               Logout
             </Text>
           </Pressable>
         </View>
 
+        {/* Error */}
         {error ? (
           <View style={styles.errorBox}>
-            <Text style={styles.errorText}>
-              {error}
-            </Text>
-
-            <Pressable
-              style={styles.retryButton}
-              onPress={() => loadDashboard()}
-            >
-              <Text style={styles.retryText}>
-                Retry
+            <View style={styles.errorIcon}>
+              <Text style={styles.errorIconText}>
+                !
               </Text>
-            </Pressable>
+            </View>
+
+            <View style={styles.errorContent}>
+              <Text style={styles.errorTitle}>
+                Unable to load dashboard
+              </Text>
+
+              <Text style={styles.errorText}>
+                {error}
+              </Text>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.retryButton,
+                  pressed && styles.retryButtonPressed,
+                ]}
+                onPress={() => loadDashboard()}
+              >
+                <Text style={styles.retryText}>
+                  Try Again
+                </Text>
+              </Pressable>
+            </View>
           </View>
         ) : null}
 
-        <Text style={styles.sectionTitle}>
-          Overview
-        </Text>
+        {/* Overview */}
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>
+              Overview
+            </Text>
 
-        <View style={styles.grid}>
+            <Text style={styles.sectionSubtitle}>
+              Today's attendance snapshot
+            </Text>
+          </View>
+
+          <View style={styles.liveBadge}>
+            <View style={styles.liveDot} />
+
+            <Text style={styles.liveText}>
+              LIVE
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.metricsGrid}>
           <MetricCard
             title="Employees"
             value={summary?.totalEmployees ?? 0}
+            icon="E"
+            variant="blue"
           />
 
           <MetricCard
             title="Active"
             value={summary?.activeEmployees ?? 0}
+            icon="✓"
+            variant="green"
           />
 
           <MetricCard
             title="Present Today"
             value={summary?.presentToday ?? 0}
+            icon="P"
+            variant="navy"
           />
 
           <MetricCard
             title="Punched In"
             value={summary?.punchedInToday ?? 0}
+            icon="→"
+            variant="blue"
           />
 
           <MetricCard
             title="Completed"
             value={summary?.completedToday ?? 0}
+            icon="✓"
+            variant="green"
           />
 
           <MetricCard
             title="Out of Range"
             value={summary?.outOfRangeToday ?? 0}
+            icon="!"
+            variant="amber"
           />
         </View>
 
-        <Text style={styles.sectionTitle}>
-          Management
-        </Text>
+        {/* Management */}
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>
+              Management
+            </Text>
+
+            <Text style={styles.sectionSubtitle}>
+              Manage your attendance system
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.managementList}>
           <ManagementCard
             title="Employees"
             description="Add, view and manage employees"
+            icon="E"
             onPress={() =>
               router.push("/admin/employees")
             }
@@ -188,6 +271,7 @@ export default function AdminDashboardScreen() {
           <ManagementCard
             title="Workplace"
             description="Configure location and geofence"
+            icon="⌖"
             onPress={() =>
               router.push("/admin/workplace")
             }
@@ -196,11 +280,17 @@ export default function AdminDashboardScreen() {
           <ManagementCard
             title="Attendance"
             description="View today's attendance records"
+            icon="✓"
             onPress={() =>
               router.push("/admin/attendance")
             }
           />
         </View>
+
+        {/* Footer */}
+        <Text style={styles.footer}>
+          © 2026 Made by Madman
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -209,12 +299,42 @@ export default function AdminDashboardScreen() {
 function MetricCard({
   title,
   value,
+  icon,
+  variant,
 }: {
   title: string;
   value: number;
+  icon: string;
+  variant: "blue" | "green" | "navy" | "amber";
 }) {
   return (
     <View style={styles.metricCard}>
+      <View
+        style={[
+          styles.metricIcon,
+          variant === "blue" && styles.metricIconBlue,
+          variant === "green" && styles.metricIconGreen,
+          variant === "navy" && styles.metricIconNavy,
+          variant === "amber" && styles.metricIconAmber,
+        ]}
+      >
+        <Text
+          style={[
+            styles.metricIconText,
+            variant === "blue" &&
+              styles.metricIconTextBlue,
+            variant === "green" &&
+              styles.metricIconTextGreen,
+            variant === "navy" &&
+              styles.metricIconTextNavy,
+            variant === "amber" &&
+              styles.metricIconTextAmber,
+          ]}
+        >
+          {icon}
+        </Text>
+      </View>
+
       <Text style={styles.metricValue}>
         {value}
       </Text>
@@ -229,17 +349,28 @@ function MetricCard({
 function ManagementCard({
   title,
   description,
+  icon,
   onPress,
 }: {
   title: string;
   description: string;
+  icon: string;
   onPress: () => void;
 }) {
   return (
     <Pressable
-      style={styles.managementCard}
+      style={({ pressed }) => [
+        styles.managementCard,
+        pressed && styles.managementCardPressed,
+      ]}
       onPress={onPress}
     >
+      <View style={styles.managementIcon}>
+        <Text style={styles.managementIconText}>
+          {icon}
+        </Text>
+      </View>
+
       <View style={styles.managementContent}>
         <Text style={styles.managementTitle}>
           {title}
@@ -250,9 +381,9 @@ function ManagementCard({
         </Text>
       </View>
 
-      <Text style={styles.arrow}>
-        →
-      </Text>
+      <View style={styles.managementArrow}>
+        <Text style={styles.arrow}>→</Text>
+      </View>
     </Pressable>
   );
 }
@@ -260,12 +391,35 @@ function ManagementCard({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#F8FBFF",
+  },
+
+  backgroundGlow: {
+    position: "absolute",
+    width: 380,
+    height: 250,
+    borderRadius: 200,
+    top: -150,
+    right: -130,
+    backgroundColor: "#E4F4FF",
+  },
+
+  backgroundGlowSmall: {
+    position: "absolute",
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    top: 100,
+    left: -150,
+    backgroundColor: "#EEF9FF",
+    opacity: 0.7,
   },
 
   container: {
-    padding: 20,
-    paddingBottom: 40,
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 34,
   },
 
   header: {
@@ -277,146 +431,374 @@ const styles = StyleSheet.create({
 
   headerContent: {
     flex: 1,
-    paddingRight: 12,
+    paddingRight: 14,
+  },
+
+  adminLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+
+  adminDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#22A866",
+    marginRight: 6,
+  },
+
+  adminLabelText: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
+    color: "#7B8CA3",
   },
 
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#0f172a",
+    fontSize: 30,
+    lineHeight: 35,
+    fontWeight: "800",
+    color: "#102A56",
+    letterSpacing: -0.7,
   },
 
   subtitle: {
-    marginTop: 5,
-    fontSize: 13,
-    color: "#64748b",
+    marginTop: 4,
+    fontSize: 12,
+    color: "#718096",
   },
 
   logoutButton: {
-    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
     paddingVertical: 9,
-    borderRadius: 8,
-    backgroundColor: "#fee2e2",
+    borderRadius: 12,
+    backgroundColor: "#FFF3F3",
+    borderWidth: 1,
+    borderColor: "#F6D7D7",
+  },
+
+  logoutButtonPressed: {
+    opacity: 0.65,
+    transform: [{ scale: 0.97 }],
+  },
+
+  logoutIcon: {
+    marginRight: 5,
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#D94A4A",
   },
 
   logoutText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
-    color: "#b91c1c",
+    color: "#C24141",
+  },
+
+  errorBox: {
+    flexDirection: "row",
+    marginBottom: 22,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: "#FFF8F8",
+    borderWidth: 1,
+    borderColor: "#F4C7C7",
+  },
+
+  errorIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FEE2E2",
+    marginRight: 10,
+  },
+
+  errorIconText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#DC2626",
+  },
+
+  errorContent: {
+    flex: 1,
+  },
+
+  errorTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#B91C1C",
+  },
+
+  errorText: {
+    marginTop: 3,
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#C24141",
+  },
+
+  retryButton: {
+    alignSelf: "flex-start",
+    marginTop: 9,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: "#FEE2E2",
+  },
+
+  retryButtonPressed: {
+    opacity: 0.6,
+  },
+
+  retryText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#991B1B",
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
   },
 
   sectionTitle: {
-    marginBottom: 12,
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#0f172a",
+    fontSize: 19,
+    fontWeight: "800",
+    color: "#102A56",
   },
 
-  grid: {
+  sectionSubtitle: {
+    marginTop: 3,
+    fontSize: 11,
+    color: "#7B8CA3",
+  },
+
+  liveBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: "#ECFDF5",
+  },
+
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#22A866",
+    marginRight: 5,
+  },
+
+  liveText: {
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 0.7,
+    color: "#18824F",
+  },
+
+  metricsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    justifyContent: "space-between",
     marginBottom: 28,
   },
 
   metricCard: {
-    width: "47%",
-    minHeight: 105,
-    padding: 16,
-    borderRadius: 14,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
+    width: "31.8%",
+    minHeight: 132,
+    padding: 13,
+    marginBottom: 10,
+    borderRadius: 17,
+    backgroundColor: "#FFFFFF",
+
+    shadowColor: "#0B4F8A",
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+
+    elevation: 2,
+  },
+
+  metricIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: "center",
     justifyContent: "center",
+    marginBottom: 12,
+  },
+
+  metricIconBlue: {
+    backgroundColor: "#EAF6FF",
+  },
+
+  metricIconGreen: {
+    backgroundColor: "#EAF9F1",
+  },
+
+  metricIconNavy: {
+    backgroundColor: "#EEF2FF",
+  },
+
+  metricIconAmber: {
+    backgroundColor: "#FFF7E8",
+  },
+
+  metricIconText: {
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  metricIconTextBlue: {
+    color: "#1688F7",
+  },
+
+  metricIconTextGreen: {
+    color: "#22A866",
+  },
+
+  metricIconTextNavy: {
+    color: "#4057A8",
+  },
+
+  metricIconTextAmber: {
+    color: "#D88A00",
   },
 
   metricValue: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#2563eb",
+    fontSize: 25,
+    lineHeight: 29,
+    fontWeight: "800",
+    color: "#102A56",
   },
 
   metricTitle: {
-    marginTop: 5,
-    fontSize: 13,
-    color: "#64748b",
+    marginTop: 3,
+    fontSize: 10,
+    lineHeight: 14,
+    color: "#718096",
+    fontWeight: "600",
   },
 
   managementList: {
-    gap: 12,
+    gap: 11,
   },
 
   managementCard: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: 18,
+    padding: 15,
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+
+    shadowColor: "#0B4F8A",
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+
+    elevation: 2,
+  },
+
+  managementCardPressed: {
+    backgroundColor: "#F7FBFF",
+    transform: [{ scale: 0.99 }],
+  },
+
+  managementIcon: {
+    width: 44,
+    height: 44,
     borderRadius: 14,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#EAF6FF",
+  },
+
+  managementIconText: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#1688F7",
   },
 
   managementContent: {
     flex: 1,
-    paddingRight: 12,
+    paddingHorizontal: 12,
   },
 
   managementTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#0f172a",
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#102A56",
   },
 
   managementDescription: {
-    marginTop: 4,
-    fontSize: 13,
-    color: "#64748b",
+    marginTop: 3,
+    fontSize: 11,
+    lineHeight: 16,
+    color: "#7B8CA3",
+  },
+
+  managementArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F2F8FD",
   },
 
   arrow: {
-    fontSize: 22,
-    color: "#2563eb",
-  },
-
-  errorBox: {
-    marginBottom: 20,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: "#fef2f2",
-    borderWidth: 1,
-    borderColor: "#fecaca",
-  },
-
-  errorText: {
-    fontSize: 13,
-    color: "#b91c1c",
-  },
-
-  retryButton: {
-    alignSelf: "flex-start",
-    marginTop: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 7,
-    backgroundColor: "#fee2e2",
-  },
-
-  retryText: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: "600",
-    color: "#991b1b",
+    color: "#1688F7",
   },
 
-  center: {
+  loadingScreen: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 30,
   },
 
-  loadingText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: "#64748b",
+  loadingBadge: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#EAF6FF",
+  },
+
+  loadingTitle: {
+    marginTop: 15,
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#102A56",
+  },
+
+  loadingSubtitle: {
+    marginTop: 5,
+    fontSize: 12,
+    color: "#7B8CA3",
+  },
+
+  footer: {
+    marginTop: 26,
+    textAlign: "center",
+    fontSize: 11,
+    fontWeight: "500",
+    color: "#7B8CA3",
   },
 });

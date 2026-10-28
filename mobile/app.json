@@ -14,7 +14,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#2563eb"
+        "foregroundImage": "./assets/logo.png",
+        "backgroundColor": "#ffffff"
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
@@ -30,7 +31,9 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Your location is used to verify your workplace location when marking attendance."
         }
-      ]
+      ],
+      "expo-router",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

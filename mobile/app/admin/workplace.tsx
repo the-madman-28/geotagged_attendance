@@ -22,7 +22,6 @@ import {
 } from "../../src/api/admin";
 
 import { useAdminAuth } from "../../src/context/AdminAuthContext";
-
 import { getCurrentLocation } from "../../src/services/location.service";
 
 export default function WorkplaceScreen() {
@@ -75,7 +74,8 @@ export default function WorkplaceScreen() {
         setError("");
       } else {
         setError(
-          err?.message || "Failed to load workplace."
+          err?.message ||
+            "Failed to load workplace."
         );
       }
     } finally {
@@ -101,7 +101,7 @@ export default function WorkplaceScreen() {
 
       Alert.alert(
         "Location Captured",
-        "The current GPS location has been added as the workplace coordinates."
+        "Your current GPS location has been set as the workplace coordinates."
       );
     } catch (err: any) {
       Alert.alert(
@@ -121,7 +121,7 @@ export default function WorkplaceScreen() {
 
     if (!name.trim()) {
       Alert.alert(
-        "Validation Error",
+        "Workplace Name Required",
         "Please enter a workplace name."
       );
       return;
@@ -140,8 +140,8 @@ export default function WorkplaceScreen() {
       latitudeValue > 90
     ) {
       Alert.alert(
-        "Validation Error",
-        "Please enter a valid latitude."
+        "Invalid Latitude",
+        "Please enter a valid latitude between -90 and 90."
       );
       return;
     }
@@ -152,8 +152,8 @@ export default function WorkplaceScreen() {
       longitudeValue > 180
     ) {
       Alert.alert(
-        "Validation Error",
-        "Please enter a valid longitude."
+        "Invalid Longitude",
+        "Please enter a valid longitude between -180 and 180."
       );
       return;
     }
@@ -163,7 +163,7 @@ export default function WorkplaceScreen() {
       radiusValue <= 0
     ) {
       Alert.alert(
-        "Validation Error",
+        "Invalid Radius",
         "Radius must be greater than 0 meters."
       );
       return;
@@ -174,7 +174,7 @@ export default function WorkplaceScreen() {
       sessionHoursValue <= 0
     ) {
       Alert.alert(
-        "Validation Error",
+        "Invalid Session Duration",
         "Maximum session hours must be greater than 0."
       );
       return;
@@ -201,13 +201,14 @@ export default function WorkplaceScreen() {
       }
 
       Alert.alert(
-        "Success",
-        "Workplace settings saved successfully."
+        "Settings Saved",
+        "Workplace settings have been saved successfully."
       );
     } catch (err: any) {
       Alert.alert(
         "Save Failed",
-        err?.message || "Failed to save workplace."
+        err?.message ||
+          "Failed to save workplace settings."
       );
     } finally {
       setSaving(false);
@@ -218,13 +219,19 @@ export default function WorkplaceScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
-          <ActivityIndicator
-            size="large"
-            color="#2563eb"
-          />
+          <View style={styles.loadingIcon}>
+            <ActivityIndicator
+              size="small"
+              color="#2563EB"
+            />
+          </View>
+
+          <Text style={styles.loadingTitle}>
+            Loading workplace
+          </Text>
 
           <Text style={styles.loadingText}>
-            Loading workplace...
+            Fetching your attendance location settings...
           </Text>
         </View>
       </SafeAreaView>
@@ -242,54 +249,131 @@ export default function WorkplaceScreen() {
         }
       >
         <ScrollView
-          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.container}
         >
+          {/* Header */}
           <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>
-                Workplace
-              </Text>
-
-              <Text style={styles.subtitle}>
-                Configure the attendance location
-              </Text>
-            </View>
-
-            <Pressable
-              style={styles.backButton}
-              onPress={() =>
-                router.replace("/admin/dashboard")
-              }
-            >
-              <Text style={styles.backButtonText}>
-                Back
-              </Text>
-            </Pressable>
-          </View>
-
-          {error ? (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>
-                {error}
-              </Text>
-
+            <View style={styles.headerLeft}>
               <Pressable
-                onPress={loadWorkplace}
-                style={styles.retryButton}
+                style={styles.backCircle}
+                onPress={() =>
+                  router.replace("/admin/dashboard")
+                }
               >
-                <Text style={styles.retryText}>
-                  Retry
+                <Text style={styles.backArrow}>
+                  ‹
                 </Text>
               </Pressable>
+
+              <View style={styles.headerText}>
+                <Text style={styles.eyebrow}>
+                  ADMIN SETTINGS
+                </Text>
+
+                <Text style={styles.title}>
+                  Workplace
+                </Text>
+
+                <Text style={styles.subtitle}>
+                  Configure the attendance location
+                </Text>
+              </View>
+            </View>
+
+            <View
+              style={[
+                styles.headerStatus,
+                isActive
+                  ? styles.headerStatusActive
+                  : styles.headerStatusInactive,
+              ]}
+            >
+              <View
+                style={[
+                  styles.headerStatusDot,
+                  isActive
+                    ? styles.headerStatusDotActive
+                    : styles.headerStatusDotInactive,
+                ]}
+              />
+
+              <Text
+                style={[
+                  styles.headerStatusText,
+                  isActive
+                    ? styles.headerStatusTextActive
+                    : styles.headerStatusTextInactive,
+                ]}
+              >
+                {isActive ? "Active" : "Inactive"}
+              </Text>
+            </View>
+          </View>
+
+          {/* Error */}
+          {error ? (
+            <View style={styles.errorBox}>
+              <View style={styles.errorIcon}>
+                <Text style={styles.errorIconText}>
+                  !
+                </Text>
+              </View>
+
+              <View style={styles.errorContent}>
+                <Text style={styles.errorTitle}>
+                  Unable to load workplace
+                </Text>
+
+                <Text style={styles.errorText}>
+                  {error}
+                </Text>
+
+                <Pressable
+                  onPress={loadWorkplace}
+                  style={styles.retryButton}
+                >
+                  <Text style={styles.retryText}>
+                    Try Again
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           ) : null}
 
-          <View style={styles.card}>
+          {/* Overview */}
+          <View style={styles.overviewCard}>
+            <View style={styles.overviewIcon}>
+              <Text style={styles.overviewIconText}>
+                ◎
+              </Text>
+            </View>
+
+            <View style={styles.overviewContent}>
+              <Text style={styles.overviewTitle}>
+                Attendance Zone
+              </Text>
+
+              <Text style={styles.overviewText}>
+                Employees can punch in and out based on
+                their distance from this configured workplace.
+              </Text>
+            </View>
+          </View>
+
+          {/* Workplace details */}
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
               Workplace Details
             </Text>
 
+            <Text style={styles.sectionSubtitle}>
+              Configure the attendance zone and rules
+            </Text>
+          </View>
+
+          <View style={styles.card}>
             <Text style={styles.label}>
               Workplace Name
             </Text>
@@ -298,18 +382,29 @@ export default function WorkplaceScreen() {
               value={name}
               onChangeText={setName}
               placeholder="e.g. Main Office"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#94A3B8"
+              autoCapitalize="words"
+              autoCorrect={false}
               style={styles.input}
             />
 
-            <View style={styles.locationHeader}>
-              <Text style={styles.locationTitle}>
-                Workplace Location
-              </Text>
+            {/* Location */}
+            <View style={styles.subsectionHeader}>
+              <View style={styles.subsectionIcon}>
+                <Text style={styles.subsectionIconText}>
+                  GPS
+                </Text>
+              </View>
 
-              <Text style={styles.locationSubtitle}>
-                Set coordinates manually or use your current GPS location.
-              </Text>
+              <View style={styles.subsectionContent}>
+                <Text style={styles.subsectionTitle}>
+                  Workplace Location
+                </Text>
+
+                <Text style={styles.subsectionSubtitle}>
+                  Set the exact coordinates used for geofencing.
+                </Text>
+              </View>
             </View>
 
             <Pressable
@@ -321,103 +416,218 @@ export default function WorkplaceScreen() {
               disabled={locating || saving}
             >
               {locating ? (
-                <ActivityIndicator color="#2563eb" />
-              ) : (
                 <>
-                  <Text style={styles.locationIcon}>
-                    📍
-                  </Text>
+                  <ActivityIndicator
+                    color="#2563EB"
+                    size="small"
+                  />
 
                   <Text style={styles.locationButtonText}>
-                    Use Current Location
+                    Capturing Location...
                   </Text>
+                </>
+              ) : (
+                <>
+                  <View style={styles.locationButtonIcon}>
+                    <Text
+                      style={
+                        styles.locationButtonIconText
+                      }
+                    >
+                      ⌖
+                    </Text>
+                  </View>
+
+                  <View>
+                    <Text
+                      style={styles.locationButtonText}
+                    >
+                      Use Current Location
+                    </Text>
+
+                    <Text
+                      style={styles.locationButtonHint}
+                    >
+                      Automatically fill GPS coordinates
+                    </Text>
+                  </View>
                 </>
               )}
             </Pressable>
 
+            <View style={styles.coordinateRow}>
+              <View style={styles.coordinateField}>
+                <Text style={styles.label}>
+                  Latitude
+                </Text>
+
+                <TextInput
+                  value={latitude}
+                  onChangeText={setLatitude}
+                  placeholder="28.6139"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="decimal-pad"
+                  style={styles.input}
+                />
+              </View>
+
+              <View
+                style={[
+                  styles.coordinateField,
+                  styles.coordinateFieldRight,
+                ]}
+              >
+                <Text style={styles.label}>
+                  Longitude
+                </Text>
+
+                <TextInput
+                  value={longitude}
+                  onChangeText={setLongitude}
+                  placeholder="77.2090"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="decimal-pad"
+                  style={styles.input}
+                />
+              </View>
+            </View>
+
+            {/* Geofence */}
+            <View style={styles.subsectionHeader}>
+              <View style={styles.subsectionIcon}>
+                <Text style={styles.subsectionIconText}>
+                  GEO
+                </Text>
+              </View>
+
+              <View style={styles.subsectionContent}>
+                <Text style={styles.subsectionTitle}>
+                  Geofence Rules
+                </Text>
+
+                <Text style={styles.subsectionSubtitle}>
+                  Define how close employees need to be.
+                </Text>
+              </View>
+            </View>
+
             <Text style={styles.label}>
-              Latitude
+              Allowed Radius
             </Text>
 
-            <TextInput
-              value={latitude}
-              onChangeText={setLatitude}
-              placeholder="e.g. 28.6139"
-              placeholderTextColor="#94a3b8"
-              keyboardType="decimal-pad"
-              style={styles.input}
-            />
+            <View style={styles.inputWithUnit}>
+              <TextInput
+                value={radiusMeters}
+                onChangeText={setRadiusMeters}
+                placeholder="50"
+                placeholderTextColor="#94A3B8"
+                keyboardType="decimal-pad"
+                style={styles.unitInput}
+              />
 
-            <Text style={styles.label}>
-              Longitude
+              <View style={styles.unitBadge}>
+                <Text style={styles.unitText}>
+                  METERS
+                </Text>
+              </View>
+            </View>
+
+            <Text style={styles.helperText}>
+              Employees inside this radius are considered
+              within the workplace.
             </Text>
 
-            <TextInput
-              value={longitude}
-              onChangeText={setLongitude}
-              placeholder="e.g. 77.2090"
-              placeholderTextColor="#94a3b8"
-              keyboardType="decimal-pad"
-              style={styles.input}
-            />
-
             <Text style={styles.label}>
-              Allowed Radius (meters)
+              Maximum Session
             </Text>
 
-            <TextInput
-              value={radiusMeters}
-              onChangeText={setRadiusMeters}
-              placeholder="e.g. 50"
-              placeholderTextColor="#94a3b8"
-              keyboardType="decimal-pad"
-              style={styles.input}
-            />
+            <View style={styles.inputWithUnit}>
+              <TextInput
+                value={maximumSessionHours}
+                onChangeText={setMaximumSessionHours}
+                placeholder="12"
+                placeholderTextColor="#94A3B8"
+                keyboardType="decimal-pad"
+                style={styles.unitInput}
+              />
 
-            <Text style={styles.label}>
-              Maximum Session (hours)
+              <View style={styles.unitBadge}>
+                <Text style={styles.unitText}>
+                  HOURS
+                </Text>
+              </View>
+            </View>
+
+            <Text style={styles.helperText}>
+              An open attendance session will be automatically
+              closed after this duration.
             </Text>
 
-            <TextInput
-              value={maximumSessionHours}
-              onChangeText={setMaximumSessionHours}
-              placeholder="e.g. 12"
-              placeholderTextColor="#94a3b8"
-              keyboardType="decimal-pad"
-              style={styles.input}
-            />
+            {/* Active */}
+            <View style={styles.switchCard}>
+              <View style={styles.switchIcon}>
+                <View
+                  style={[
+                    styles.switchDot,
+                    isActive
+                      ? styles.switchDotActive
+                      : styles.switchDotInactive,
+                  ]}
+                />
+              </View>
 
-            <View style={styles.switchRow}>
               <View style={styles.switchTextContainer}>
                 <Text style={styles.switchTitle}>
                   Workplace Active
                 </Text>
 
                 <Text style={styles.switchSubtitle}>
-                  Employees can mark attendance when active.
+                  {isActive
+                    ? "Employees can currently mark attendance."
+                    : "Attendance marking is currently disabled."}
                 </Text>
               </View>
 
               <Switch
                 value={isActive}
                 onValueChange={setIsActive}
+                trackColor={{
+                  false: "#CBD5E1",
+                  true: "#93C5FD",
+                }}
+                thumbColor={
+                  isActive
+                    ? "#2563EB"
+                    : "#F8FAFC"
+                }
               />
             </View>
           </View>
 
+          {/* Geofencing explanation */}
           <View style={styles.infoCard}>
-            <Text style={styles.infoTitle}>
-              Geofencing
-            </Text>
+            <View style={styles.infoIcon}>
+              <Text style={styles.infoIconText}>
+                i
+              </Text>
+            </View>
 
-            <Text style={styles.infoText}>
-              Employees must be within the configured
-              radius of these coordinates to mark
-              attendance without providing an
-              outside-range reason.
-            </Text>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoTitle}>
+                How geofencing works
+              </Text>
+
+              <Text style={styles.infoText}>
+                The employee's GPS coordinates are compared
+                with this workplace location. If the employee
+                is outside the configured radius, they must
+                provide a reason before attendance can be
+                recorded.
+              </Text>
+            </View>
           </View>
 
+          {/* Save */}
           <Pressable
             style={[
               styles.saveButton,
@@ -427,15 +637,34 @@ export default function WorkplaceScreen() {
             disabled={saving || locating}
           >
             {saving ? (
-              <ActivityIndicator color="#ffffff" />
+              <>
+                <ActivityIndicator
+                  color="#FFFFFF"
+                  size="small"
+                />
+
+                <Text style={styles.saveButtonText}>
+                  Saving...
+                </Text>
+              </>
             ) : (
-              <Text style={styles.saveButtonText}>
-                {exists
-                  ? "Save Changes"
-                  : "Create Workplace"}
-              </Text>
+              <>
+                <Text style={styles.saveButtonIcon}>
+                  ✓
+                </Text>
+
+                <Text style={styles.saveButtonText}>
+                  {exists
+                    ? "Save Changes"
+                    : "Create Workplace"}
+                </Text>
+              </>
             )}
           </Pressable>
+
+          <Text style={styles.footer}>
+            © 2026 Made by Madman
+          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -445,7 +674,7 @@ export default function WorkplaceScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#F5F9FF",
   },
 
   flex: {
@@ -453,224 +682,571 @@ const styles = StyleSheet.create({
   },
 
   container: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 32,
   },
 
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 24,
+    marginBottom: 22,
+  },
+
+  headerLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  backCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+
+  backArrow: {
+    fontSize: 30,
+    lineHeight: 32,
+    color: "#1E3A5F",
+    fontWeight: "400",
+    marginTop: -3,
+  },
+
+  headerText: {
+    flex: 1,
+  },
+
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.4,
+    color: "#2563EB",
+    marginBottom: 2,
   },
 
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#0f172a",
+    fontSize: 25,
+    fontWeight: "800",
+    color: "#102A56",
   },
 
   subtitle: {
-    marginTop: 4,
-    fontSize: 14,
-    color: "#64748b",
+    marginTop: 2,
+    fontSize: 11,
+    color: "#718096",
   },
 
-  backButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 8,
-    backgroundColor: "#e2e8f0",
+  headerStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 999,
+    marginLeft: 8,
   },
 
-  backButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#334155",
+  headerStatusActive: {
+    backgroundColor: "#E8F8EF",
   },
 
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 18,
+  headerStatusInactive: {
+    backgroundColor: "#F1F5F9",
+  },
+
+  headerStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 5,
+  },
+
+  headerStatusDotActive: {
+    backgroundColor: "#16A34A",
+  },
+
+  headerStatusDotInactive: {
+    backgroundColor: "#94A3B8",
+  },
+
+  headerStatusText: {
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
+  headerStatusTextActive: {
+    color: "#15803D",
+  },
+
+  headerStatusTextInactive: {
+    color: "#64748B",
+  },
+
+  overviewCard: {
+    backgroundColor: "#EAF4FF",
+    borderRadius: 20,
+    padding: 17,
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#D8EAFB",
+    marginBottom: 25,
+  },
+
+  overviewIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 13,
+  },
+
+  overviewIconText: {
+    fontSize: 28,
+    fontWeight: "500",
+    color: "#2563EB",
+  },
+
+  overviewContent: {
+    flex: 1,
+  },
+
+  overviewTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#183B66",
+  },
+
+  overviewText: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: "#66809D",
+    marginTop: 4,
+  },
+
+  sectionHeader: {
+    marginBottom: 11,
   },
 
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#0f172a",
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#183B66",
+  },
+
+  sectionSubtitle: {
+    fontSize: 12,
+    color: "#7A8CA5",
+    marginTop: 3,
+  },
+
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#E7EEF7",
+    shadowColor: "#163B67",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 14,
+    elevation: 2,
     marginBottom: 18,
   },
 
   label: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#334155",
-    marginBottom: 7,
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#334E6F",
+    marginBottom: 8,
   },
 
   input: {
-    height: 48,
+    height: 50,
     borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 10,
+    borderColor: "#D8E2EF",
+    borderRadius: 13,
     paddingHorizontal: 14,
-    fontSize: 15,
-    color: "#0f172a",
-    backgroundColor: "#ffffff",
-    marginBottom: 16,
+    fontSize: 14,
+    color: "#183B66",
+    backgroundColor: "#FBFDFF",
+    marginBottom: 17,
   },
 
-  locationHeader: {
-    marginBottom: 12,
-  },
-
-  locationTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#0f172a",
-  },
-
-  locationSubtitle: {
+  subsectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 4,
-    fontSize: 12,
-    lineHeight: 18,
-    color: "#64748b",
+    marginBottom: 14,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#EEF2F7",
+  },
+
+  subsectionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#F0F6FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 11,
+  },
+
+  subsectionIconText: {
+    fontSize: 8,
+    fontWeight: "900",
+    color: "#2563EB",
+  },
+
+  subsectionContent: {
+    flex: 1,
+  },
+
+  subsectionTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#183B66",
+  },
+
+  subsectionSubtitle: {
+    fontSize: 10,
+    lineHeight: 15,
+    color: "#7A8CA5",
+    marginTop: 2,
   },
 
   locationButton: {
-    height: 48,
-    borderRadius: 10,
+    minHeight: 54,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#93c5fd",
-    backgroundColor: "#eff6ff",
-    alignItems: "center",
-    justifyContent: "center",
+    borderColor: "#BFDDF8",
+    backgroundColor: "#F0F7FF",
     flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 13,
     marginBottom: 18,
   },
 
-  locationIcon: {
-    fontSize: 18,
-    marginRight: 7,
+  locationButtonIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+
+  locationButtonIconText: {
+    fontSize: 21,
+    color: "#2563EB",
+    fontWeight: "700",
   },
 
   locationButtonText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#2563eb",
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#2563EB",
   },
 
-  switchRow: {
+  locationButtonHint: {
+    fontSize: 10,
+    color: "#7890AA",
+    marginTop: 2,
+  },
+
+  coordinateRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+
+  coordinateField: {
+    flex: 1,
+  },
+
+  coordinateFieldRight: {
+    marginLeft: 10,
+  },
+
+  inputWithUnit: {
+    height: 50,
+    borderWidth: 1,
+    borderColor: "#D8E2EF",
+    borderRadius: 13,
+    backgroundColor: "#FBFDFF",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
+    paddingLeft: 14,
+    paddingRight: 7,
+  },
+
+  unitInput: {
+    flex: 1,
+    height: "100%",
+    fontSize: 14,
+    color: "#183B66",
+  },
+
+  unitBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: "#EEF4FA",
+  },
+
+  unitText: {
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+    color: "#64748B",
+  },
+
+  helperText: {
+    fontSize: 10,
+    color: "#8A9AB0",
+    lineHeight: 15,
+    marginTop: 6,
+    marginBottom: 17,
+  },
+
+  switchCard: {
+    marginTop: 5,
+    padding: 13,
+    borderRadius: 15,
+    backgroundColor: "#F8FAFD",
+    borderWidth: 1,
+    borderColor: "#E8EEF5",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  switchIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+
+  switchDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+
+  switchDotActive: {
+    backgroundColor: "#22C55E",
+  },
+
+  switchDotInactive: {
+    backgroundColor: "#94A3B8",
   },
 
   switchTextContainer: {
     flex: 1,
-    paddingRight: 16,
+    paddingRight: 10,
   },
 
   switchTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#0f172a",
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#183B66",
   },
 
   switchSubtitle: {
-    marginTop: 3,
-    fontSize: 12,
-    lineHeight: 18,
-    color: "#64748b",
+    fontSize: 10,
+    lineHeight: 15,
+    color: "#7A8CA5",
+    marginTop: 2,
   },
 
   infoCard: {
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 14,
-    backgroundColor: "#eff6ff",
+    marginBottom: 18,
+    padding: 15,
+    borderRadius: 17,
+    backgroundColor: "#F0F7FF",
     borderWidth: 1,
-    borderColor: "#bfdbfe",
+    borderColor: "#DCECFB",
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+
+  infoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+
+  infoIconText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#2563EB",
+  },
+
+  infoContent: {
+    flex: 1,
   },
 
   infoTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1e40af",
-    marginBottom: 6,
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#183B66",
+    marginBottom: 4,
   },
 
   infoText: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: "#475569",
+    fontSize: 10,
+    lineHeight: 16,
+    color: "#6B819B",
   },
 
   saveButton: {
-    height: 50,
-    marginTop: 20,
-    borderRadius: 10,
+    height: 54,
+    borderRadius: 15,
+    backgroundColor: "#2563EB",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#2563eb",
+    flexDirection: "row",
+    shadowColor: "#2563EB",
+    shadowOffset: {
+      width: 0,
+      height: 7,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 4,
   },
 
-  disabledButton: {
-    opacity: 0.7,
+  saveButtonIcon: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    marginRight: 8,
   },
 
   saveButtonText: {
-    color: "#ffffff",
-    fontSize: 15,
-    fontWeight: "700",
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  disabledButton: {
+    opacity: 0.65,
   },
 
   errorBox: {
-    marginBottom: 16,
+    marginBottom: 18,
     padding: 14,
-    borderRadius: 12,
-    backgroundColor: "#fef2f2",
+    borderRadius: 16,
+    backgroundColor: "#FEF2F2",
     borderWidth: 1,
-    borderColor: "#fecaca",
+    borderColor: "#FECACA",
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+
+  errorIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+
+  errorIconText: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#DC2626",
+  },
+
+  errorContent: {
+    flex: 1,
+  },
+
+  errorTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#991B1B",
+    marginBottom: 3,
   },
 
   errorText: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: "#b91c1c",
+    fontSize: 11,
+    lineHeight: 16,
+    color: "#B91C1C",
   },
 
   retryButton: {
-    marginTop: 10,
     alignSelf: "flex-start",
-    paddingHorizontal: 12,
+    marginTop: 9,
+    paddingHorizontal: 11,
     paddingVertical: 7,
-    borderRadius: 7,
-    backgroundColor: "#fee2e2",
+    borderRadius: 8,
+    backgroundColor: "#FEE2E2",
   },
 
   retryText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#991b1b",
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#991B1B",
+  },
+
+  loadingIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    backgroundColor: "#EAF4FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+
+  loadingTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#183B66",
+  },
+
+  loadingText: {
+    marginTop: 5,
+    fontSize: 11,
+    color: "#7A8CA5",
+    textAlign: "center",
   },
 
   center: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
+    padding: 24,
   },
 
-  loadingText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: "#64748b",
+  footer: {
+    textAlign: "center",
+    fontSize: 10,
+    color: "#8A9AB0",
+    fontWeight: "500",
+    marginTop: 20,
   },
 });

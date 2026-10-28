@@ -33,29 +33,32 @@ function NavigationGuard() {
     const firstSegment = segments[0];
     const secondSegment = segments.at(1);
 
-    const onEmployeeLogin =
+    const isRoot = !firstSegment;
+
+    const isEmployeeLogin =
       firstSegment === "login";
 
-    const onEmployeeArea =
+    const isEmployeeArea =
       firstSegment === "employee";
 
-    const onAdminLogin =
+    const isAdminLogin =
       firstSegment === "admin" &&
       secondSegment === "login";
 
-    const onAdminArea =
+    const isAdminArea =
       firstSegment === "admin" &&
       secondSegment !== "login";
 
     /*
-     * Admin session
+     * ================================
+     * ADMIN SESSION
+     * ================================
      */
     if (adminToken) {
       if (
-        onAdminLogin ||
-        (!onAdminArea &&
-          !onEmployeeArea &&
-          !onEmployeeLogin)
+        isRoot ||
+        isEmployeeLogin ||
+        isAdminLogin
       ) {
         router.replace("/admin/dashboard");
       }
@@ -64,15 +67,23 @@ function NavigationGuard() {
     }
 
     /*
-     * Employee session
+     * ================================
+     * EMPLOYEE SESSION
+     * ================================
      */
     if (employeeToken) {
       if (
-        onEmployeeLogin ||
-        onAdminLogin ||
-        (!onEmployeeArea &&
-          !onAdminArea)
+        isRoot ||
+        isEmployeeLogin
       ) {
+        router.replace("/employee/dashboard");
+      }
+
+      /*
+       * Prevent an employee session from
+       * entering the admin area.
+       */
+      if (isAdminArea || isAdminLogin) {
         router.replace("/employee/dashboard");
       }
 
@@ -80,11 +91,13 @@ function NavigationGuard() {
     }
 
     /*
-     * No authenticated session
+     * ================================
+     * NO SESSION
+     * ================================
      */
     if (
-      !onEmployeeLogin &&
-      !onAdminLogin
+      !isEmployeeLogin &&
+      !isAdminLogin
     ) {
       router.replace("/login");
     }

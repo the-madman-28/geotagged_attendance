@@ -1,6 +1,5 @@
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -22,13 +21,13 @@ import { useAdminAuth } from "../../src/context/AdminAuthContext";
 export default function AdminEmployeesScreen() {
   const { token } = useAdminAuth();
 
-  const [employees, setEmployees] = useState<
-    AdminEmployee[]
-  >([]);
-
+  const [employees, setEmployees] = useState<AdminEmployee[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [updatingId, setUpdatingId] = useState<string | null>(
+    null
+  );
 
   const loadEmployees = useCallback(
     async (isRefresh = false) => {
@@ -67,75 +66,51 @@ export default function AdminEmployeesScreen() {
     }, [loadEmployees])
   );
 
-  const handleStatusChange = (
+  async function handleStatusChange(
     employee: AdminEmployee
-  ) => {
-    const nextStatus = !employee.isActive;
+  ) {
+    if (!token || updatingId) {
+      return;
+    }
 
-    Alert.alert(
-      nextStatus
-        ? "Activate Employee"
-        : "Deactivate Employee",
-      `Are you sure you want to ${
-        nextStatus ? "activate" : "deactivate"
-      } ${employee.employeeId}?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: nextStatus
-            ? "Activate"
-            : "Deactivate",
-          style: nextStatus
-            ? "default"
-            : "destructive",
-          onPress: async () => {
-            if (!token) {
-              return;
-            }
+    try {
+      setUpdatingId(employee.employeeId);
+      setError("");
 
-            try {
-              const response =
-                await updateEmployeeStatus(
-                  token,
-                  employee.employeeId,
-                  nextStatus
-                );
+      await updateEmployeeStatus(
+        token,
+        employee.employeeId,
+        !employee.isActive
+      );
 
-              setEmployees((current) =>
-                current.map((item) =>
-                  item.employeeId ===
-                  employee.employeeId
-                    ? response.employee
-                    : item
-                )
-              );
-            } catch (err: any) {
-              Alert.alert(
-                "Update Failed",
-                err?.message ||
-                  "Failed to update employee status."
-              );
-            }
-          },
-        },
-      ]
-    );
-  };
+      await loadEmployees(true);
+    } catch (err: any) {
+      setError(
+        err?.message ||
+          "Failed to update employee status."
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.center}>
-          <ActivityIndicator
-            size="large"
-            color="#2563eb"
-          />
+        <View style={styles.loadingScreen}>
+          <View style={styles.loadingIcon}>
+            <ActivityIndicator
+              size="large"
+              color="#2563EB"
+            />
+          </View>
 
-          <Text style={styles.loadingText}>
-            Loading employees...
+          <Text style={styles.loadingTitle}>
+            Loading employees
+          </Text>
+
+          <Text style={styles.loadingSubtitle}>
+            Fetching employee records...
           </Text>
         </View>
       </SafeAreaView>
@@ -145,32 +120,84 @@ export default function AdminEmployeesScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerContent}>
+          <View style={styles.headerText}>
+            <Text style={styles.eyebrow}>
+              ADMIN PORTAL
+            </Text>
+
             <Text style={styles.title}>
               Employees
             </Text>
 
             <Text style={styles.subtitle}>
-              {employees.length} employee
-              {employees.length === 1 ? "" : "s"}
+              Manage employee accounts and access
             </Text>
           </View>
 
+          <Pressable
+            style={styles.backButton}
+            onPress={() =>
+              router.replace("/admin/dashboard")
+            }
+          >
+            <Text style={styles.backButtonText}>
+              Back
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Overview */}
+        <View style={styles.overviewCard}>
+          <View style={styles.overviewLeft}>
+            <View style={styles.overviewIcon}>
+              <Text style={styles.overviewIconText}>
+                E
+              </Text>
+            </View>
+
+            <View>
+              <Text style={styles.overviewLabel}>
+                TOTAL EMPLOYEES
+              </Text>
+
+              <Text style={styles.overviewCaption}>
+                Registered employee accounts
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.overviewValue}>
+            {employees.length}
+          </Text>
+        </View>
+
+        {/* Actions */}
+        <View style={styles.actionsRow}>
           <Pressable
             style={styles.addButton}
             onPress={() =>
               router.push("/admin/employee")
             }
           >
+            <Text style={styles.addButtonIcon}>
+              +
+            </Text>
+
             <Text style={styles.addButtonText}>
-              + Add
+              Add Employee
             </Text>
           </Pressable>
         </View>
 
+        {/* Error */}
         {error ? (
           <View style={styles.errorBox}>
+            <Text style={styles.errorTitle}>
+              Something went wrong
+            </Text>
+
             <Text style={styles.errorText}>
               {error}
             </Text>
@@ -180,12 +207,13 @@ export default function AdminEmployeesScreen() {
               onPress={() => loadEmployees()}
             >
               <Text style={styles.retryText}>
-                Retry
+                Try Again
               </Text>
             </Pressable>
           </View>
         ) : null}
 
+        {/* Employee List */}
         {employees.length === 0 ? (
           <ScrollView
             contentContainerStyle={styles.emptyContainer}
@@ -193,103 +221,64 @@ export default function AdminEmployeesScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={() => loadEmployees(true)}
+                tintColor="#2563EB"
               />
             }
           >
-            <Text style={styles.emptyTitle}>
-              No employees
-            </Text>
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIcon}>
+                <Text style={styles.emptyIconText}>
+                  E
+                </Text>
+              </View>
 
-            <Text style={styles.emptyText}>
-              Add your first employee to start managing
-              attendance.
-            </Text>
-
-            <Pressable
-              style={styles.emptyButton}
-              onPress={() =>
-                router.push("/admin/employee")
-              }
-            >
-              <Text style={styles.emptyButtonText}>
-                Add Employee
+              <Text style={styles.emptyTitle}>
+                No employees yet
               </Text>
-            </Pressable>
+
+              <Text style={styles.emptyText}>
+                Create your first employee account to
+                start managing attendance.
+              </Text>
+
+              <Pressable
+                style={styles.emptyButton}
+                onPress={() =>
+                  router.push("/admin/employee")
+                }
+              >
+                <Text style={styles.emptyButtonText}>
+                  Add Employee
+                </Text>
+              </Pressable>
+            </View>
           </ScrollView>
         ) : (
           <ScrollView
             contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={() => loadEmployees(true)}
+                tintColor="#2563EB"
               />
             }
           >
-            {employees.map((employee) => (
-              <View
-                key={employee.employeeId}
-                style={styles.employeeCard}
-              >
-                <Pressable
-                  style={styles.employeeMain}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/admin/employee",
-                      params: {
-                        employeeId:
-                          employee.employeeId,
-                      },
-                    })
-                  }
+            {employees.map((employee) => {
+              const isUpdating =
+                updatingId === employee.employeeId;
+
+              return (
+                <View
+                  key={employee.employeeId}
+                  style={styles.employeeCard}
                 >
-                  <View style={styles.employeeInfo}>
-                    <Text style={styles.employeeId}>
-                      {employee.employeeId}
-                    </Text>
-
-                    <Text style={styles.employeeName}>
-                      {employee.name}
-                    </Text>
-
-                    <Text style={styles.createdAt}>
-                      Added{" "}
-                      {new Date(
-                        employee.createdAt
-                      ).toLocaleDateString("en-IN")}
-                    </Text>
-                  </View>
-
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      employee.isActive
-                        ? styles.activeBadge
-                        : styles.inactiveBadge,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        employee.isActive
-                          ? styles.activeText
-                          : styles.inactiveText,
-                      ]}
-                    >
-                      {employee.isActive
-                        ? "Active"
-                        : "Inactive"}
-                    </Text>
-                  </View>
-                </Pressable>
-
-                <View style={styles.cardFooter}>
                   <Pressable
-                    style={styles.viewButton}
+                    style={styles.employeeMain}
                     onPress={() =>
                       router.push({
-                        pathname:
-                          "/admin/employee",
+                        pathname: "/admin/employee",
                         params: {
                           employeeId:
                             employee.employeeId,
@@ -297,38 +286,118 @@ export default function AdminEmployeesScreen() {
                       })
                     }
                   >
-                    <Text style={styles.viewButtonText}>
-                      View Details
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>
+                        {employee.name
+                          .charAt(0)
+                          .toUpperCase()}
+                      </Text>
+                    </View>
+
+                    <View style={styles.employeeInfo}>
+                      <Text style={styles.employeeName}>
+                        {employee.name}
+                      </Text>
+
+                      <Text style={styles.employeeId}>
+                        {employee.employeeId}
+                      </Text>
+
+                      <View style={styles.statusRow}>
+                        <View
+                          style={[
+                            styles.statusDot,
+                            employee.isActive
+                              ? styles.activeDot
+                              : styles.inactiveDot,
+                          ]}
+                        />
+
+                        <Text
+                          style={[
+                            styles.statusText,
+                            employee.isActive
+                              ? styles.activeText
+                              : styles.inactiveText,
+                          ]}
+                        >
+                          {employee.isActive
+                            ? "Active"
+                            : "Inactive"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.chevron}>
+                      ›
                     </Text>
                   </Pressable>
 
-                  <Pressable
-                    style={[
-                      styles.statusButton,
-                      employee.isActive
-                        ? styles.deactivateButton
-                        : styles.activateButton,
-                    ]}
-                    onPress={() =>
-                      handleStatusChange(employee)
-                    }
-                  >
-                    <Text
-                      style={[
-                        styles.statusButtonText,
-                        employee.isActive
-                          ? styles.deactivateText
-                          : styles.activateText,
-                      ]}
+                  <View style={styles.employeeFooter}>
+                    <Pressable
+                      style={styles.attendanceButton}
+                      onPress={() =>
+                        router.push({
+                          pathname:
+                            "/admin/attendance",
+                          params: {
+                            employeeId:
+                              employee.employeeId,
+                          },
+                        })
+                      }
                     >
-                      {employee.isActive
-                        ? "Deactivate"
-                        : "Activate"}
-                    </Text>
-                  </Pressable>
+                      <Text
+                        style={
+                          styles.attendanceButtonText
+                        }
+                      >
+                        View Attendance
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={[
+                        styles.statusButton,
+                        employee.isActive
+                          ? styles.deactivateButton
+                          : styles.activateButton,
+                      ]}
+                      disabled={isUpdating}
+                      onPress={() =>
+                        handleStatusChange(employee)
+                      }
+                    >
+                      {isUpdating ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={
+                            employee.isActive
+                              ? "#B91C1C"
+                              : "#166534"
+                          }
+                        />
+                      ) : (
+                        <Text
+                          style={[
+                            styles.statusButtonText,
+                            employee.isActive
+                              ? styles.deactivateText
+                              : styles.activateText,
+                          ]}
+                        >
+                          {employee.isActive
+                            ? "Deactivate"
+                            : "Activate"}
+                        </Text>
+                      )}
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
+
+            <View style={styles.bottomSpace} />
           </ScrollView>
         )}
       </View>
@@ -339,104 +408,209 @@ export default function AdminEmployeesScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#F7FAFC",
   },
 
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    backgroundColor: "#F7FAFC",
   },
 
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 20,
+    paddingTop: 12,
+    paddingBottom: 18,
   },
 
-  headerContent: {
+  headerText: {
     flex: 1,
+    paddingRight: 12,
+  },
+
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
+    color: "#2563EB",
+    marginBottom: 2,
   },
 
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#0f172a",
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#102A56",
   },
 
   subtitle: {
-    marginTop: 4,
+    marginTop: 3,
+    fontSize: 12,
+    color: "#718096",
+  },
+
+  backButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 11,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#DCE5F0",
+  },
+
+  backButtonText: {
     fontSize: 13,
-    color: "#64748b",
+    fontWeight: "700",
+    color: "#334155",
+  },
+
+  overviewCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderRadius: 17,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E1E8F0",
+    marginBottom: 12,
+  },
+
+  overviewLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  overviewIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    backgroundColor: "#EAF2FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 11,
+  },
+
+  overviewIconText: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#2563EB",
+  },
+
+  overviewLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    color: "#7C8CA2",
+  },
+
+  overviewCaption: {
+    marginTop: 3,
+    fontSize: 11,
+    color: "#94A3B8",
+  },
+
+  overviewValue: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#102A56",
+  },
+
+  actionsRow: {
+    marginBottom: 14,
   },
 
   addButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 9,
-    backgroundColor: "#2563eb",
+    minHeight: 48,
+    borderRadius: 13,
+    backgroundColor: "#2563EB",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
+  },
+
+  addButtonIcon: {
+    fontSize: 21,
+    lineHeight: 22,
+    fontWeight: "500",
+    color: "#FFFFFF",
+    marginRight: 7,
   },
 
   addButtonText: {
-    color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-
-  list: {
-    paddingBottom: 30,
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
 
   employeeCard: {
-    marginBottom: 12,
-    padding: 16,
-    borderRadius: 14,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 17,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#E1E8F0",
+    marginBottom: 12,
+    overflow: "hidden",
   },
 
   employeeMain: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 15,
+  },
+
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 15,
+    backgroundColor: "#EEF4FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+
+  avatarText: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#2563EB",
   },
 
   employeeInfo: {
     flex: 1,
-    paddingRight: 10,
-  },
-
-  employeeId: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#0f172a",
   },
 
   employeeName: {
-    marginTop: 4,
-    fontSize: 14,
-    color: "#334155",
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#102A56",
   },
 
-  createdAt: {
-    marginTop: 5,
-    fontSize: 11,
-    color: "#94a3b8",
+  employeeId: {
+    marginTop: 2,
+    fontSize: 12,
+    color: "#718096",
   },
 
-  statusBadge: {
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 999,
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 7,
   },
 
-  activeBadge: {
-    backgroundColor: "#dcfce7",
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    marginRight: 6,
   },
 
-  inactiveBadge: {
-    backgroundColor: "#f1f5f9",
+  activeDot: {
+    backgroundColor: "#16A34A",
+  },
+
+  inactiveDot: {
+    backgroundColor: "#94A3B8",
   },
 
   statusText: {
@@ -445,54 +619,63 @@ const styles = StyleSheet.create({
   },
 
   activeText: {
-    color: "#166534",
+    color: "#15803D",
   },
 
   inactiveText: {
-    color: "#64748b",
+    color: "#64748B",
   },
 
-  cardFooter: {
+  chevron: {
+    fontSize: 28,
+    fontWeight: "300",
+    color: "#A0AEC0",
+    marginLeft: 8,
+  },
+
+  employeeFooter: {
     flexDirection: "row",
-    gap: 10,
-    marginTop: 15,
-    paddingTop: 13,
-    borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
-  },
-
-  viewButton: {
-    flex: 1,
     alignItems: "center",
-    paddingVertical: 9,
-    borderRadius: 8,
-    backgroundColor: "#eff6ff",
+    gap: 9,
+    paddingHorizontal: 15,
+    paddingBottom: 14,
   },
 
-  viewButtonText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#2563eb",
+  attendanceButton: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  attendanceButtonText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#334155",
   },
 
   statusButton: {
-    flex: 1,
+    minWidth: 95,
+    minHeight: 40,
+    borderRadius: 10,
     alignItems: "center",
-    paddingVertical: 9,
-    borderRadius: 8,
+    justifyContent: "center",
+    paddingHorizontal: 10,
   },
 
   activateButton: {
-    backgroundColor: "#dcfce7",
+    backgroundColor: "#DCFCE7",
   },
 
   deactivateButton: {
-    backgroundColor: "#fee2e2",
+    backgroundColor: "#FEE2E2",
   },
 
   statusButtonText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "800",
   },
 
   activateText: {
@@ -500,82 +683,142 @@ const styles = StyleSheet.create({
   },
 
   deactivateText: {
-    color: "#b91c1c",
+    color: "#B91C1C",
   },
 
   errorBox: {
-    marginBottom: 16,
     padding: 14,
-    borderRadius: 12,
-    backgroundColor: "#fef2f2",
+    borderRadius: 14,
+    backgroundColor: "#FEF2F2",
     borderWidth: 1,
-    borderColor: "#fecaca",
+    borderColor: "#FECACA",
+    marginBottom: 14,
+  },
+
+  errorTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#991B1B",
   },
 
   errorText: {
-    fontSize: 13,
-    color: "#b91c1c",
+    marginTop: 3,
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#B91C1C",
   },
 
   retryButton: {
     alignSelf: "flex-start",
-    marginTop: 10,
+    marginTop: 9,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 7,
-    backgroundColor: "#fee2e2",
+    borderRadius: 9,
+    backgroundColor: "#FEE2E2",
   },
 
   retryText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#991b1b",
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#991B1B",
   },
 
   emptyContainer: {
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 30,
+    paddingVertical: 40,
+  },
+
+  emptyCard: {
+    width: "100%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E1E8F0",
+    alignItems: "center",
+    padding: 28,
+  },
+
+  emptyIcon: {
+    width: 62,
+    height: 62,
+    borderRadius: 20,
+    backgroundColor: "#EEF4FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 15,
+  },
+
+  emptyIconText: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#2563EB",
   },
 
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#0f172a",
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#102A56",
   },
 
   emptyText: {
     marginTop: 7,
     fontSize: 13,
     lineHeight: 19,
+    color: "#718096",
     textAlign: "center",
-    color: "#64748b",
   },
 
   emptyButton: {
     marginTop: 18,
     paddingHorizontal: 18,
     paddingVertical: 11,
-    borderRadius: 9,
-    backgroundColor: "#2563eb",
+    borderRadius: 11,
+    backgroundColor: "#2563EB",
   },
 
   emptyButtonText: {
-    color: "#ffffff",
-    fontSize: 13,
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
 
-  center: {
+  list: {
+    paddingBottom: 30,
+  },
+
+  bottomSpace: {
+    height: 10,
+  },
+
+  loadingScreen: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 30,
+    backgroundColor: "#F7FAFC",
   },
 
-  loadingText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: "#64748b",
+  loadingIcon: {
+    width: 68,
+    height: 68,
+    borderRadius: 22,
+    backgroundColor: "#EAF2FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 15,
+  },
+
+  loadingTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#102A56",
+  },
+
+  loadingSubtitle: {
+    marginTop: 5,
+    fontSize: 12,
+    color: "#8795A8",
   },
 });

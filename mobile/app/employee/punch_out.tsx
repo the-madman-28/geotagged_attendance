@@ -1,10 +1,9 @@
-// mobile/app/employee/punch_out.tsx
-
 import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -20,6 +19,12 @@ import {
   getCurrentLocation,
 } from "../../src/services/location.service";
 
+import AppBackground from "../../src/components/AppBackground";
+import AppHeader from "../../src/components/AppHeader";
+import AppCard from "../../src/components/AppCard";
+import AppFooter from "../../src/components/AppFooter";
+import SuccessModal from "../../src/components/SuccessModal";
+
 export default function PunchOutScreen() {
   const { token } = useAuth();
 
@@ -28,6 +33,17 @@ export default function PunchOutScreen() {
     useState<CurrentLocation | null>(null);
   const [showReason, setShowReason] = useState(false);
   const [reason, setReason] = useState("");
+
+  const [successModalVisible, setSuccessModalVisible] =
+    useState(false);
+
+  const [successMessage, setSuccessMessage] =
+    useState(
+      "Your attendance has been completed successfully."
+    );
+
+  const [successDetails, setSuccessDetails] =
+    useState<string[]>([]);
 
   async function submitPunchOut(
     submittedReason?: string
@@ -54,17 +70,45 @@ export default function PunchOutScreen() {
           : {}),
       });
 
-      Alert.alert(
-        "Punch Out Successful",
-        result.message,
-        [
-          {
-            text: "OK",
-            onPress: () =>
-              router.replace("/employee/dashboard"),
-          },
-        ]
+      const attendance = result.attendance;
+
+      const punchOutTime = attendance.punchOut
+        ? new Date(
+            attendance.punchOut
+          ).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "Completed";
+
+      const locationStatus =
+        attendance.punchOutStatus === "IN_RANGE"
+          ? "Location: Inside workplace"
+          : "Location: Outside workplace";
+
+      const details = [
+        `Punch-out time: ${punchOutTime}`,
+        locationStatus,
+      ];
+
+      if (
+        attendance.punchOutDistance != null
+      ) {
+        details.push(
+          `Distance: ${Math.round(
+            attendance.punchOutDistance
+          )} m`
+        );
+      }
+
+      setSuccessMessage(
+        result.message ||
+          "Your attendance has been completed successfully."
       );
+
+      setSuccessDetails(details);
+
+      setSuccessModalVisible(true);
     } catch (error) {
       const message =
         error instanceof Error
@@ -100,61 +144,95 @@ export default function PunchOutScreen() {
     await submitPunchOut(value);
   }
 
+  function closeSuccessModal() {
+    setSuccessModalVisible(false);
+    router.replace("/employee/dashboard");
+  }
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.header}>
+    <AppBackground>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
           <Pressable
             onPress={() => router.back()}
             disabled={loading}
+            style={styles.backButton}
           >
-            <Text style={styles.back}>
-              ← Back
+            <Text style={styles.backIcon}>‹</Text>
+
+            <Text style={styles.backText}>
+              Back
             </Text>
           </Pressable>
 
-          <Text style={styles.title}>
-            Punch Out
-          </Text>
+          <AppHeader
+            title="Punch Out"
+            subtitle="Close your attendance session"
+          />
 
-          <View style={styles.spacer} />
-        </View>
-
-        <View style={styles.content}>
-          <View style={styles.card}>
-            <Text style={styles.icon}>📍</Text>
+          <AppCard style={styles.locationCard}>
+            <View style={styles.locationIcon}>
+              <Text style={styles.locationIconText}>
+                ◎
+              </Text>
+            </View>
 
             <Text style={styles.cardTitle}>
               Location Verification
             </Text>
 
             <Text style={styles.description}>
-              Your current location will be
-              verified against the workplace.
+              Your current GPS location will be
+              checked against the registered
+              workplace.
             </Text>
 
             {location && (
-              <View style={styles.location}>
-                <Text style={styles.detail}>
-                  Latitude:{" "}
-                  {location.latitude.toFixed(6)}
-                </Text>
+              <View style={styles.locationDetails}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>
+                    Latitude
+                  </Text>
 
-                <Text style={styles.detail}>
-                  Longitude:{" "}
-                  {location.longitude.toFixed(6)}
-                </Text>
+                  <Text style={styles.detailValue}>
+                    {location.latitude.toFixed(6)}
+                  </Text>
+                </View>
 
-                <Text style={styles.detail}>
-                  Accuracy:{" "}
-                  {location.accuracy.toFixed(1)} m
-                </Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>
+                    Longitude
+                  </Text>
+
+                  <Text style={styles.detailValue}>
+                    {location.longitude.toFixed(6)}
+                  </Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>
+                    GPS Accuracy
+                  </Text>
+
+                  <Text style={styles.detailValue}>
+                    {location.accuracy.toFixed(1)} m
+                  </Text>
+                </View>
               </View>
             )}
-          </View>
+          </AppCard>
 
           {showReason ? (
-            <View style={styles.card}>
+            <AppCard style={styles.reasonCard}>
+              <View style={styles.warningIcon}>
+                <Text style={styles.warningIconText}>
+                  !
+                </Text>
+              </View>
+
               <Text style={styles.reasonTitle}>
                 Outside Workplace
               </Text>
@@ -162,14 +240,14 @@ export default function PunchOutScreen() {
               <Text style={styles.description}>
                 Your location is outside the
                 allowed workplace radius. Please
-                provide a reason.
+                provide a reason to continue.
               </Text>
 
               <TextInput
                 value={reason}
                 onChangeText={setReason}
                 placeholder="Enter reason"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#9AA8B8"
                 multiline
                 editable={!loading}
                 style={styles.input}
@@ -179,54 +257,70 @@ export default function PunchOutScreen() {
                 onPress={submitReason}
                 disabled={loading}
                 style={[
-                  styles.button,
+                  styles.primaryButton,
                   loading &&
                     styles.buttonDisabled,
                 ]}
               >
                 {loading ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <Text style={styles.buttonText}>
                     Submit Punch Out
                   </Text>
                 )}
               </Pressable>
-            </View>
+            </AppCard>
           ) : (
             <>
-              <View style={styles.info}>
+              <AppCard style={styles.infoCard}>
                 <Text style={styles.infoTitle}>
                   Before punching out
                 </Text>
 
-                <Text style={styles.infoText}>
-                  • Enable GPS
-                </Text>
+                <View style={styles.checkRow}>
+                  <Text style={styles.checkIcon}>
+                    ✓
+                  </Text>
 
-                <Text style={styles.infoText}>
-                  • Allow location permission
-                </Text>
+                  <Text style={styles.infoText}>
+                    Enable GPS on your device
+                  </Text>
+                </View>
 
-                <Text style={styles.infoText}>
-                  • Stay near your workplace
-                </Text>
-              </View>
+                <View style={styles.checkRow}>
+                  <Text style={styles.checkIcon}>
+                    ✓
+                  </Text>
+
+                  <Text style={styles.infoText}>
+                    Allow location permission
+                  </Text>
+                </View>
+
+                <View style={styles.checkRow}>
+                  <Text style={styles.checkIcon}>
+                    ✓
+                  </Text>
+
+                  <Text style={styles.infoText}>
+                    Stay near your workplace
+                  </Text>
+                </View>
+              </AppCard>
 
               <Pressable
-                onPress={() =>
-                  submitPunchOut()
-                }
+                onPress={() => submitPunchOut()}
                 disabled={loading}
                 style={[
-                  styles.button,
+                  styles.primaryButton,
                   loading &&
                     styles.buttonDisabled,
                 ]}
               >
                 {loading ? (
                   <View style={styles.loading}>
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color="#FFFFFF" />
 
                     <Text style={styles.buttonText}>
                       Getting Location...
@@ -240,145 +334,209 @@ export default function PunchOutScreen() {
               </Pressable>
             </>
           )}
-        </View>
-      </View>
-    </SafeAreaView>
+
+          <AppFooter />
+        </ScrollView>
+      </SafeAreaView>
+
+      <SuccessModal
+        visible={successModalVisible}
+        title="Punch Out Successful"
+        message={successMessage}
+        details={successDetails}
+        buttonText="Continue"
+        onClose={closeSuccessModal}
+      />
+    </AppBackground>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f3f4f6",
-  },
-
-  container: {
-    flex: 1,
-  },
-
-  header: {
-    height: 64,
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-
-  back: {
-    color: "#2563eb",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-
-  title: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-  },
-
-  spacer: {
-    width: 50,
   },
 
   content: {
-    flex: 1,
-    padding: 20,
+    paddingBottom: 18,
+  },
+
+  backButton: {
+    marginHorizontal: 20,
+    marginTop: 4,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  backIcon: {
+    fontSize: 30,
+    lineHeight: 30,
+    color: "#1677B8",
+    marginRight: 5,
+  },
+
+  backText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1677B8",
+  },
+
+  locationCard: {
+    marginHorizontal: 20,
+    marginBottom: 15,
+    alignItems: "center",
+  },
+
+  locationIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 18,
+    backgroundColor: "#EAF6FF",
+    alignItems: "center",
     justifyContent: "center",
+    marginBottom: 13,
   },
 
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 22,
-    marginBottom: 16,
-  },
-
-  icon: {
-    fontSize: 40,
-    textAlign: "center",
-    marginBottom: 10,
+  locationIconText: {
+    fontSize: 31,
+    fontWeight: "700",
+    color: "#1677B8",
   },
 
   cardTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    textAlign: "center",
-    color: "#111827",
+    fontSize: 19,
+    fontWeight: "800",
+    color: "#102A56",
   },
 
   description: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: "#6b7280",
+    marginTop: 7,
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#718096",
     textAlign: "center",
-    marginTop: 8,
   },
 
-  location: {
+  locationDetails: {
+    width: "100%",
     marginTop: 18,
     padding: 14,
-    borderRadius: 10,
-    backgroundColor: "#f9fafb",
+    borderRadius: 14,
+    backgroundColor: "#F5FAFE",
   },
 
-  detail: {
-    fontSize: 13,
-    color: "#374151",
-    marginBottom: 5,
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 5,
   },
 
-  info: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 18,
+  detailLabel: {
+    fontSize: 12,
+    color: "#7B8CA3",
   },
 
-  infoTitle: {
-    fontSize: 15,
+  detailValue: {
+    fontSize: 12,
     fontWeight: "700",
-    color: "#111827",
-    marginBottom: 10,
+    color: "#304B67",
   },
 
-  infoText: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginBottom: 6,
+  reasonCard: {
+    marginHorizontal: 20,
+    marginBottom: 15,
+  },
+
+  warningIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "#FFF4DD",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+
+  warningIconText: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#C78600",
   },
 
   reasonTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
+    fontWeight: "800",
+    color: "#102A56",
   },
 
   input: {
-    minHeight: 100,
+    minHeight: 105,
     borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 15,
-    color: "#111827",
+    borderColor: "#D8E2EC",
+    borderRadius: 14,
+    padding: 13,
+    fontSize: 14,
+    color: "#102A56",
     textAlignVertical: "top",
     marginTop: 16,
     marginBottom: 14,
+    backgroundColor: "#FBFDFF",
   },
 
-  button: {
-    height: 52,
-    borderRadius: 10,
-    backgroundColor: "#2563eb",
+  infoCard: {
+    marginHorizontal: 20,
+    marginBottom: 15,
+  },
+
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#102A56",
+    marginBottom: 12,
+  },
+
+  checkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 9,
+  },
+
+  checkIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#E8F8F0",
+    color: "#22A866",
+    textAlign: "center",
+    lineHeight: 22,
+    fontSize: 12,
+    fontWeight: "800",
+    marginRight: 9,
+  },
+
+  infoText: {
+    fontSize: 13,
+    color: "#66788B",
+  },
+
+  primaryButton: {
+    height: 54,
+    marginHorizontal: 20,
+    borderRadius: 15,
+    backgroundColor: "#1677B8",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#1677B8",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 4,
   },
 
   buttonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
 
   loading: {
@@ -388,8 +546,8 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
   },
 });
