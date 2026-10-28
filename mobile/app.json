@@ -5,26 +5,25 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-
     "scheme": "geotaggedattendance",
-
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Your location is used to verify that you are at the workplace when marking attendance."
       }
     },
-
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#2563eb"
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
-      ]
+        "ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.madman28.geotaggedattendance"
     },
-
     "plugins": [
       [
         "expo-location",
@@ -32,6 +31,11 @@
           "locationAlwaysAndWhenInUsePermission": "Your location is used to verify your workplace location when marking attendance."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d8ededc6-65bd-444c-9e59-f6ba29f04fe8"
+      }
+    }
   }
 }
