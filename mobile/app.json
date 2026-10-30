@@ -7,12 +7,13 @@
     "userInterfaceStyle": "light",
     "scheme": "geotaggedattendance",
     "ios": {
-  "supportsTablet": true,
-  "bundleIdentifier": "com.madman28.geotaggedattendance",
-  "infoPlist": {
-    "NSLocationWhenInUseUsageDescription": "Your location is used to verify that you are at the workplace when marking attendance."
-  }
-},
+      "supportsTablet": true,
+      "bundleIdentifier": "com.madman28.geotaggedattendance",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Your location is used to verify that you are at the workplace when marking attendance.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
