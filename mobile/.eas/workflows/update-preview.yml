@@ -3,7 +3,7 @@ name: Update Preview
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   update_preview:
