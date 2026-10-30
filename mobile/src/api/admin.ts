@@ -294,3 +294,22 @@ export async function getOutOfRangeAttendance(
     }
   );
 }
+
+export async function resetEmployeeDeviceRegistration(
+  token: string,
+  employeeId: string
+) {
+  return apiRequest<{
+    success: boolean;
+    message: string;
+    deletedCount: number;
+  }>(
+    `/api/admin/employees/${encodeURIComponent(
+      employeeId
+    )}/device-registration`,
+    {
+      method: "DELETE",
+      token,
+    }
+  );
+}
