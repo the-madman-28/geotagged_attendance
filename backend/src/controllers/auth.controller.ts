@@ -6,7 +6,7 @@ export async function employeeLoginController(
   res: Response
 ) {
   try {
-    const { employeeId } = req.body;
+    const { employeeId, deviceId } = req.body;
 
     if (!employeeId) {
       return res.status(400).json({
@@ -15,7 +15,14 @@ export async function employeeLoginController(
       });
     }
 
-    const result = await employeeLogin(employeeId);
+    if (!deviceId) {
+      return res.status(400).json({
+        success: false,
+        message: "Device ID is required",
+      });
+    }
+
+    const result = await employeeLogin(employeeId, deviceId);
 
     return res.status(200).json({
       success: true,
@@ -35,6 +42,16 @@ export async function employeeLoginController(
         return res.status(403).json({
           success: false,
           message: "Employee account is inactive",
+        });
+      }
+
+      if (
+        error.message ===
+        "Device is already registered for another employee"
+      ) {
+        return res.status(409).json({
+          success: false,
+          message: "Device is already registered for another employee",
         });
       }
     }

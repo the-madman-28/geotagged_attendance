@@ -9,6 +9,7 @@ import {
   getAllEmployees,
   getEmployeeById,
   updateEmployeeStatus,
+  resetEmployeeDeviceRegistration,
 } from "../services/employee.service";
 
 import {
@@ -275,6 +276,54 @@ export async function getEmployeeProfileController(
 
     console.error(
       "Get employee profile error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+export async function resetEmployeeDeviceRegistrationController(
+  req: Request,
+  res: Response
+) {
+  try {
+    const employeeId = req.params.employeeId as string;
+
+    if (!employeeId) {
+      return res.status(400).json({
+        success: false,
+        message: "Employee ID is required",
+      });
+    }
+
+    const result =
+      await resetEmployeeDeviceRegistration(employeeId);
+
+    return res.status(200).json({
+      success: true,
+      message:
+        result.deletedCount > 0
+          ? "Device registration reset successfully"
+          : "No device registration found for today",
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Employee not found"
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    console.error(
+      "Reset employee device registration error:",
       error
     );
 

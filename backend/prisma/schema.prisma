@@ -22,14 +22,30 @@ model Admin {
 }
 
 model Employee {
-  employeeId String   @id
+  employeeId String           @id
   name       String
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  isActive   Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+  devices    EmployeeDevice[]
 
   attendance Attendance[]
 
   @@map("employees")
+}
+
+model EmployeeDevice {
+  id               String   @id @default(uuid())
+  deviceId         String
+  employeeId       String
+  registrationDate DateTime @db.Date
+  createdAt        DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [employeeId], onDelete: Cascade)
+
+  @@unique([deviceId, registrationDate])
+  @@index([employeeId])
+  @@index([deviceId, registrationDate])
+  @@map("employee_devices")
 }
 
 model Workplace {

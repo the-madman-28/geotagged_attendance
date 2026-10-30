@@ -7,6 +7,7 @@ import {
   getAllEmployeesController,
   getEmployeeByIdController,
   updateEmployeeStatusController,
+  resetEmployeeDeviceRegistrationController,
 } from "../controllers/employee.controller";
 
 const router = Router();
@@ -33,6 +34,12 @@ router.patch(
   "/:employeeId/status",
   adminAuthMiddleware,
   updateEmployeeStatusController
+);
+
+router.delete(
+  "/:employeeId/device-registration",
+  adminAuthMiddleware,
+  resetEmployeeDeviceRegistrationController
 );
 
 export default router;

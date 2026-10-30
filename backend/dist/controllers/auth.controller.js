@@ -5,14 +5,20 @@ exports.adminLoginController = adminLoginController;
 const auth_service_1 = require("../services/auth.service");
 async function employeeLoginController(req, res) {
     try {
-        const { employeeId } = req.body;
+        const { employeeId, deviceId } = req.body;
         if (!employeeId) {
             return res.status(400).json({
                 success: false,
                 message: "Employee ID is required",
             });
         }
-        const result = await (0, auth_service_1.employeeLogin)(employeeId);
+        if (!deviceId) {
+            return res.status(400).json({
+                success: false,
+                message: "Device ID is required",
+            });
+        }
+        const result = await (0, auth_service_1.employeeLogin)(employeeId, deviceId);
         return res.status(200).json({
             success: true,
             message: "Employee login successful",
@@ -31,6 +37,13 @@ async function employeeLoginController(req, res) {
                 return res.status(403).json({
                     success: false,
                     message: "Employee account is inactive",
+                });
+            }
+            if (error.message ===
+                "Device is already registered for another employee") {
+                return res.status(409).json({
+                    success: false,
+                    message: "Device is already registered for another employee",
                 });
             }
         }

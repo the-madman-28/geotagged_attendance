@@ -12,7 +12,7 @@ const JWT_SECRET = process.env.JWT_SECRET ?? "";
 if (!JWT_SECRET) {
     throw new Error("JWT_SECRET is not configured");
 }
-async function employeeLogin(employeeId) {
+async function employeeLogin(employeeId, deviceId) {
     const employee = await prisma_1.default.employee.findUnique({
         where: {
             employeeId,
@@ -23,6 +23,34 @@ async function employeeLogin(employeeId) {
     }
     if (!employee.isActive) {
         throw new Error("Employee account is inactive");
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Check whether this device is already registered today
+    const existingDevice = await prisma_1.default.employeeDevice.findFirst({
+        where: {
+            deviceId,
+            registrationDate: {
+                gte: today,
+                lt: tomorrow,
+            },
+        },
+    });
+    if (existingDevice &&
+        existingDevice.employeeId !== employee.employeeId) {
+        throw new Error("Device is already registered for another employee");
+    }
+    // Register this device for the employee if not already registered today
+    if (!existingDevice) {
+        await prisma_1.default.employeeDevice.create({
+            data: {
+                deviceId,
+                employeeId: employee.employeeId,
+                registrationDate: today,
+            },
+        });
     }
     const token = jsonwebtoken_1.default.sign({
         employeeId: employee.employeeId,

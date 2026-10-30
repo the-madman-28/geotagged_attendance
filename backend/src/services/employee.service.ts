@@ -109,3 +109,31 @@ export async function updateEmployeeStatus(
 
   return updatedEmployee;
 }
+
+export async function resetEmployeeDeviceRegistration(
+  employeeId: string
+) {
+  const employee = await prisma.employee.findUnique({
+    where: {
+      employeeId,
+    },
+  });
+
+  if (!employee) {
+    throw new Error("Employee not found");
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const result = await prisma.employeeDevice.deleteMany({
+    where: {
+      employeeId,
+      registrationDate: today,
+    },
+  });
+
+  return {
+    deletedCount: result.count,
+  };
+}

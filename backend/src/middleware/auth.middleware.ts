@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import prisma from "../config/prisma";
 
 const JWT_SECRET: string = process.env.JWT_SECRET ?? "";
 
@@ -14,7 +15,7 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-export function employeeAuthMiddleware(
+export async function employeeAuthMiddleware(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
@@ -47,22 +48,46 @@ export function employeeAuthMiddleware(
 
     const decoded = jwt.verify(token, JWT_SECRET);
 
-if (
-  typeof decoded !== "object" ||
-  decoded === null ||
-  !("employeeId" in decoded) ||
-  !("role" in decoded) ||
-  typeof decoded.employeeId !== "string" ||
-  decoded.role !== "EMPLOYEE"
-) {
+    if (
+      typeof decoded !== "object" ||
+      decoded === null ||
+      !("employeeId" in decoded) ||
+      !("role" in decoded) ||
+      typeof decoded.employeeId !== "string" ||
+      decoded.role !== "EMPLOYEE"
+    ) {
       return res.status(401).json({
         success: false,
         message: "Invalid employee token",
       });
     }
 
+    const employee = await prisma.employee.findUnique({
+      where: {
+        employeeId: decoded.employeeId,
+      },
+      select: {
+        employeeId: true,
+        isActive: true,
+      },
+    });
+
+    if (!employee) {
+      return res.status(401).json({
+        success: false,
+        message: "Employee account not found",
+      });
+    }
+
+    if (!employee.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "Employee account is inactive",
+      });
+    }
+
     req.employee = {
-      employeeId: decoded.employeeId,
+      employeeId: employee.employeeId,
       role: decoded.role,
     };
 

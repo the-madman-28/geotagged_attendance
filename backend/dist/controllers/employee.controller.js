@@ -5,6 +5,7 @@ exports.getAllEmployeesController = getAllEmployeesController;
 exports.getEmployeeByIdController = getEmployeeByIdController;
 exports.updateEmployeeStatusController = updateEmployeeStatusController;
 exports.getEmployeeProfileController = getEmployeeProfileController;
+exports.resetEmployeeDeviceRegistrationController = resetEmployeeDeviceRegistrationController;
 const employee_service_1 = require("../services/employee.service");
 async function createEmployeeController(req, res) {
     try {
@@ -206,6 +207,39 @@ async function getEmployeeProfileController(req, res) {
             });
         }
         console.error("Get employee profile error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+}
+async function resetEmployeeDeviceRegistrationController(req, res) {
+    try {
+        const employeeId = req.params.employeeId;
+        if (!employeeId) {
+            return res.status(400).json({
+                success: false,
+                message: "Employee ID is required",
+            });
+        }
+        const result = await (0, employee_service_1.resetEmployeeDeviceRegistration)(employeeId);
+        return res.status(200).json({
+            success: true,
+            message: result.deletedCount > 0
+                ? "Device registration reset successfully"
+                : "No device registration found for today",
+            deletedCount: result.deletedCount,
+        });
+    }
+    catch (error) {
+        if (error instanceof Error &&
+            error.message === "Employee not found") {
+            return res.status(404).json({
+                success: false,
+                message: "Employee not found",
+            });
+        }
+        console.error("Reset employee device registration error:", error);
         return res.status(500).json({
             success: false,
             message: "Internal server error",

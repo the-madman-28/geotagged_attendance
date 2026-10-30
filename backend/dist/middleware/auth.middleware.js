@@ -5,11 +5,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.employeeAuthMiddleware = employeeAuthMiddleware;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const prisma_1 = __importDefault(require("../config/prisma"));
 const JWT_SECRET = process.env.JWT_SECRET ?? "";
 if (!JWT_SECRET) {
     throw new Error("JWT_SECRET is not configured");
 }
-function employeeAuthMiddleware(req, res, next) {
+async function employeeAuthMiddleware(req, res, next) {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader) {
@@ -43,8 +44,29 @@ function employeeAuthMiddleware(req, res, next) {
                 message: "Invalid employee token",
             });
         }
+        const employee = await prisma_1.default.employee.findUnique({
+            where: {
+                employeeId: decoded.employeeId,
+            },
+            select: {
+                employeeId: true,
+                isActive: true,
+            },
+        });
+        if (!employee) {
+            return res.status(401).json({
+                success: false,
+                message: "Employee account not found",
+            });
+        }
+        if (!employee.isActive) {
+            return res.status(403).json({
+                success: false,
+                message: "Employee account is inactive",
+            });
+        }
         req.employee = {
-            employeeId: decoded.employeeId,
+            employeeId: employee.employeeId,
             role: decoded.role,
         };
         next();

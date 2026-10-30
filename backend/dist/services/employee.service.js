@@ -7,6 +7,7 @@ exports.createEmployee = createEmployee;
 exports.getAllEmployees = getAllEmployees;
 exports.getEmployeeById = getEmployeeById;
 exports.updateEmployeeStatus = updateEmployeeStatus;
+exports.resetEmployeeDeviceRegistration = resetEmployeeDeviceRegistration;
 const prisma_1 = __importDefault(require("../config/prisma"));
 async function createEmployee(data) {
     const employeeId = data.employeeId.trim();
@@ -89,4 +90,25 @@ async function updateEmployeeStatus(employeeId, isActive) {
         },
     });
     return updatedEmployee;
+}
+async function resetEmployeeDeviceRegistration(employeeId) {
+    const employee = await prisma_1.default.employee.findUnique({
+        where: {
+            employeeId,
+        },
+    });
+    if (!employee) {
+        throw new Error("Employee not found");
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const result = await prisma_1.default.employeeDevice.deleteMany({
+        where: {
+            employeeId,
+            registrationDate: today,
+        },
+    });
+    return {
+        deletedCount: result.count,
+    };
 }

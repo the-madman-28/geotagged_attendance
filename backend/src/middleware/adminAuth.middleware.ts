@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import prisma from "../config/prisma";  
 
 const JWT_SECRET: string = process.env.JWT_SECRET ?? "";
 
@@ -14,7 +15,7 @@ export interface AuthenticatedAdminRequest extends Request {
   };
 }
 
-export function adminAuthMiddleware(
+export async function adminAuthMiddleware(
   req: AuthenticatedAdminRequest,
   res: Response,
   next: NextFunction
@@ -61,8 +62,32 @@ export function adminAuthMiddleware(
       });
     }
 
+    const admin = await prisma.admin.findUnique({
+      where: {
+        id: decoded.adminId,
+      },
+      select: {
+        id: true,
+        isActive: true,
+      },
+    });
+
+    if (!admin) {
+      return res.status(401).json({
+        success: false,
+        message: "Admin account not found",
+      });
+    }
+
+    if (!admin.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "Admin account is inactive",
+      });
+    }
+
     req.admin = {
-      adminId: decoded.adminId,
+      adminId: admin.id,
       role: decoded.role,
     };
 

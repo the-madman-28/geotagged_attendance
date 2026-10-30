@@ -6,6 +6,9 @@ import {
   useState,
 } from "react";
 
+import * as Application from "expo-application";
+import { Platform } from "react-native";
+
 import {
   clearAuthData,
   getStoredEmployee,
@@ -92,18 +95,32 @@ export function AuthProvider({
     }
   }
 
-  async function login(employeeId: string) {
-    const result =
-      await employeeLogin(employeeId);
+async function login(employeeId: string) {
+  let deviceId: string | null = null;
 
-    await saveAuthData(
-      result.token,
-      result.employee
-    );
-
-    setToken(result.token);
-    setEmployee(result.employee);
+  if (Platform.OS === "android") {
+    deviceId = Application.getAndroidId();
+  } else if (Platform.OS === "ios") {
+    deviceId = await Application.getIosIdForVendorAsync();
   }
+
+  if (!deviceId) {
+    throw new Error("Unable to identify this device");
+  }
+
+  const result = await employeeLogin(
+    employeeId,
+    deviceId
+  );
+
+  await saveAuthData(
+    result.token,
+    result.employee
+  );
+
+  setToken(result.token);
+  setEmployee(result.employee);
+}
 
   async function logout() {
     await clearAuthData();

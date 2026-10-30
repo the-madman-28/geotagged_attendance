@@ -8,4 +8,5 @@ router.post("/", adminAuth_middleware_1.adminAuthMiddleware, employee_controller
 router.get("/", adminAuth_middleware_1.adminAuthMiddleware, employee_controller_1.getAllEmployeesController);
 router.get("/:employeeId", adminAuth_middleware_1.adminAuthMiddleware, employee_controller_1.getEmployeeByIdController);
 router.patch("/:employeeId/status", adminAuth_middleware_1.adminAuthMiddleware, employee_controller_1.updateEmployeeStatusController);
+router.delete("/:employeeId/device-registration", adminAuth_middleware_1.adminAuthMiddleware, employee_controller_1.resetEmployeeDeviceRegistrationController);
 exports.default = router;

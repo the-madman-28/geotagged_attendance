@@ -5,11 +5,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.adminAuthMiddleware = adminAuthMiddleware;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const prisma_1 = __importDefault(require("../config/prisma"));
 const JWT_SECRET = process.env.JWT_SECRET ?? "";
 if (!JWT_SECRET) {
     throw new Error("JWT_SECRET is not configured");
 }
-function adminAuthMiddleware(req, res, next) {
+async function adminAuthMiddleware(req, res, next) {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader) {
@@ -43,8 +44,29 @@ function adminAuthMiddleware(req, res, next) {
                 message: "Invalid admin token",
             });
         }
+        const admin = await prisma_1.default.admin.findUnique({
+            where: {
+                id: decoded.adminId,
+            },
+            select: {
+                id: true,
+                isActive: true,
+            },
+        });
+        if (!admin) {
+            return res.status(401).json({
+                success: false,
+                message: "Admin account not found",
+            });
+        }
+        if (!admin.isActive) {
+            return res.status(403).json({
+                success: false,
+                message: "Admin account is inactive",
+            });
+        }
         req.admin = {
-            adminId: decoded.adminId,
+            adminId: admin.id,
             role: decoded.role,
         };
         next();
