@@ -1,9 +1,9 @@
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -17,9 +17,12 @@ import {
 import { useCallback, useState } from "react";
 
 import {
+  AdminEmployee,
   createEmployee,
   getEmployee,
+  resetEmployeeDeviceRegistration,
 } from "../../src/api/admin";
+
 import { useAdminAuth } from "../../src/context/AdminAuthContext";
 
 function formatDate(value?: string | null): string {
@@ -146,6 +149,51 @@ export default function AdminEmployeeScreen() {
       setSaving(false);
     }
   }
+
+  async function handleResetDevice() {
+  if (!token || !employee) {
+    return;
+  }
+
+  Alert.alert(
+    "Reset Device Registration",
+    `Reset today's device registration for ${employee.employeeId}?\n\nThis will allow another device or employee to register according to today's device policy. Attendance records will not be affected.`,
+    [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Reset Device",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setSaving(true);
+
+            const response =
+              await resetEmployeeDeviceRegistration(
+                token,
+                employee.employeeId
+              );
+
+            Alert.alert(
+              "Device Registration",
+              response.message
+            );
+          } catch (err: any) {
+            Alert.alert(
+              "Reset Failed",
+              err?.message ||
+                "Failed to reset device registration."
+            );
+          } finally {
+            setSaving(false);
+          }
+        },
+      },
+    ]
+  );
+}
 
   if (loading) {
     return (
@@ -531,6 +579,27 @@ export default function AdminEmployeeScreen() {
               →
             </Text>
           </Pressable>
+
+          <Pressable
+  style={[
+    styles.resetDeviceButton,
+    saving && styles.disabledButton,
+  ]}
+  onPress={handleResetDevice}
+  disabled={saving}
+>
+  {saving ? (
+    <ActivityIndicator
+      size="small"
+      color="#ffffff"
+    />
+  ) : (
+    <Text style={styles.resetDeviceButtonText}>
+      Reset Device Registration
+    </Text>
+  )}
+</Pressable>
+
         </View>
 
         {error ? (
@@ -1042,4 +1111,19 @@ const styles = StyleSheet.create({
   bottomSpace: {
     height: 10,
   },
+
+  resetDeviceButton: {
+  height: 50,
+  borderRadius: 10,
+  backgroundColor: "#dc2626",
+  alignItems: "center",
+  justifyContent: "center",
+  marginTop: 12,
+},
+
+resetDeviceButtonText: {
+  color: "#ffffff",
+  fontSize: 15,
+  fontWeight: "700",
+},
 });
