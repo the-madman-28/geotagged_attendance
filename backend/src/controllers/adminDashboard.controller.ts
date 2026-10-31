@@ -1,11 +1,10 @@
 import { Response } from "express";
 
-import { AuthenticatedAdminRequest } from "../middleware/adminAuth.middleware";
-
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
 import { getAdminDashboardSummary } from "../services/adminDashboard.service";
 
 export async function getAdminDashboardSummaryController(
-  req: AuthenticatedAdminRequest,
+  req: AuthenticatedRequest,
   res: Response
 ) {
   try {
@@ -16,7 +15,9 @@ export async function getAdminDashboardSummaryController(
       });
     }
 
-    const summary = await getAdminDashboardSummary();
+    const organizationId = req.admin.organizationId;
+
+    const summary = await getAdminDashboardSummary(organizationId);
 
     return res.status(200).json({
       success: true,

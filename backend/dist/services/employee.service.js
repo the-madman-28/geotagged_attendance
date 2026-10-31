@@ -10,6 +10,7 @@ exports.updateEmployeeStatus = updateEmployeeStatus;
 exports.resetEmployeeDeviceRegistration = resetEmployeeDeviceRegistration;
 const prisma_1 = __importDefault(require("../config/prisma"));
 async function createEmployee(data) {
+    const organizationId = data.organizationId;
     const employeeId = data.employeeId.trim();
     const name = data.name.trim();
     if (!employeeId) {
@@ -20,7 +21,10 @@ async function createEmployee(data) {
     }
     const existingEmployee = await prisma_1.default.employee.findUnique({
         where: {
-            employeeId,
+            organizationId_employeeId: {
+                organizationId,
+                employeeId,
+            },
         },
     });
     if (existingEmployee) {
@@ -28,6 +32,7 @@ async function createEmployee(data) {
     }
     const employee = await prisma_1.default.employee.create({
         data: {
+            organizationId,
             employeeId,
             name,
             isActive: true,
@@ -35,8 +40,11 @@ async function createEmployee(data) {
     });
     return employee;
 }
-async function getAllEmployees() {
+async function getAllEmployees(organizationId) {
     const employees = await prisma_1.default.employee.findMany({
+        where: {
+            organizationId,
+        },
         orderBy: {
             employeeId: "asc",
         },
@@ -49,10 +57,13 @@ async function getAllEmployees() {
     });
     return employees;
 }
-async function getEmployeeById(employeeId) {
+async function getEmployeeById(organizationId, employeeId) {
     const employee = await prisma_1.default.employee.findUnique({
         where: {
-            employeeId,
+            organizationId_employeeId: {
+                organizationId,
+                employeeId,
+            },
         },
         select: {
             employeeId: true,
@@ -66,10 +77,13 @@ async function getEmployeeById(employeeId) {
     }
     return employee;
 }
-async function updateEmployeeStatus(employeeId, isActive) {
+async function updateEmployeeStatus(organizationId, employeeId, isActive) {
     const employee = await prisma_1.default.employee.findUnique({
         where: {
-            employeeId,
+            organizationId_employeeId: {
+                organizationId,
+                employeeId,
+            },
         },
     });
     if (!employee) {
@@ -77,7 +91,10 @@ async function updateEmployeeStatus(employeeId, isActive) {
     }
     const updatedEmployee = await prisma_1.default.employee.update({
         where: {
-            employeeId,
+            organizationId_employeeId: {
+                organizationId,
+                employeeId,
+            },
         },
         data: {
             isActive,
@@ -91,10 +108,16 @@ async function updateEmployeeStatus(employeeId, isActive) {
     });
     return updatedEmployee;
 }
-async function resetEmployeeDeviceRegistration(employeeId) {
+async function resetEmployeeDeviceRegistration(organizationId, employeeId) {
     const employee = await prisma_1.default.employee.findUnique({
         where: {
-            employeeId,
+            organizationId_employeeId: {
+                organizationId,
+                employeeId,
+            },
+        },
+        select: {
+            id: true,
         },
     });
     if (!employee) {
@@ -104,7 +127,8 @@ async function resetEmployeeDeviceRegistration(employeeId) {
     today.setHours(0, 0, 0, 0);
     const result = await prisma_1.default.employeeDevice.deleteMany({
         where: {
-            employeeId,
+            organizationId,
+            employeeId: employee.id,
             registrationDate: today,
         },
     });

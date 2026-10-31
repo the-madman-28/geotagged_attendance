@@ -1,13 +1,17 @@
-import { Request, Response } from "express";
+import { Response } from "express";
+
 import {
   createWorkplace,
   getWorkplace,
   updateWorkplace,
 } from "../services/workplace.service";
-import { AuthenticatedAdminRequest } from "../middleware/adminAuth.middleware";
+
+import {
+  AuthenticatedRequest,
+} from "../middleware/auth.middleware";
 
 export async function createWorkplaceController(
-  req: AuthenticatedAdminRequest,
+  req: AuthenticatedRequest,
   res: Response
 ) {
   try {
@@ -17,6 +21,8 @@ export async function createWorkplaceController(
         message: "Admin authentication required",
       });
     }
+
+    const organizationId = req.admin.organizationId;
 
     const {
       name,
@@ -61,6 +67,7 @@ export async function createWorkplaceController(
     }
 
     const workplace = await createWorkplace({
+      organizationId,
       name,
       latitude,
       longitude,
@@ -111,7 +118,7 @@ export async function createWorkplaceController(
 }
 
 export async function getWorkplaceController(
-  req: AuthenticatedAdminRequest,
+  req: AuthenticatedRequest,
   res: Response
 ) {
   try {
@@ -122,7 +129,11 @@ export async function getWorkplaceController(
       });
     }
 
-    const workplace = await getWorkplace();
+    const organizationId = req.admin.organizationId;
+
+    const workplace = await getWorkplace(
+      organizationId
+    );
 
     return res.status(200).json({
       success: true,
@@ -149,7 +160,7 @@ export async function getWorkplaceController(
 }
 
 export async function updateWorkplaceController(
-  req: AuthenticatedAdminRequest,
+  req: AuthenticatedRequest,
   res: Response
 ) {
   try {
@@ -159,6 +170,8 @@ export async function updateWorkplaceController(
         message: "Admin authentication required",
       });
     }
+
+    const organizationId = req.admin.organizationId;
 
     const {
       name,
@@ -203,6 +216,7 @@ export async function updateWorkplaceController(
     }
 
     const workplace = await updateWorkplace({
+      organizationId,
       name,
       latitude,
       longitude,
@@ -218,7 +232,8 @@ export async function updateWorkplaceController(
   } catch (error) {
     if (error instanceof Error) {
       if (
-        error.message === "No active workplace configured"
+        error.message ===
+        "No active workplace configured"
       ) {
         return res.status(404).json({
           success: false,

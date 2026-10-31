@@ -28,6 +28,7 @@ async function createWorkplace(data) {
     }
     const existingActiveWorkplace = await prisma_1.default.workplace.findFirst({
         where: {
+            organizationId: data.organizationId,
             isActive: true,
         },
     });
@@ -36,6 +37,7 @@ async function createWorkplace(data) {
     }
     const workplace = await prisma_1.default.workplace.create({
         data: {
+            organizationId: data.organizationId,
             name,
             latitude: data.latitude,
             longitude: data.longitude,
@@ -46,9 +48,10 @@ async function createWorkplace(data) {
     });
     return workplace;
 }
-async function getWorkplace() {
+async function getWorkplace(organizationId) {
     const workplace = await prisma_1.default.workplace.findFirst({
         where: {
+            organizationId,
             isActive: true,
         },
         select: {
@@ -88,6 +91,7 @@ async function updateWorkplace(data) {
     }
     const workplace = await prisma_1.default.workplace.findFirst({
         where: {
+            organizationId: data.organizationId,
             isActive: true,
         },
     });

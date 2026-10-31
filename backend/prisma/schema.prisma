@@ -11,38 +11,68 @@ enum AttendanceStatus {
   OUT_OF_RANGE
 }
 
-model Admin {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
 
+  admins     Admin[]
+  employees  Employee[]
+  workplaces Workplace[]
+  attendance Attendance[]
+  devices    EmployeeDevice[]
+
+  @@map("organizations")
+}
+
+model Admin {
+  id             String   @id @default(uuid())
+  organizationId String
+  email          String   @unique
+  passwordHash   String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
   @@map("admins")
 }
 
 model Employee {
-  employeeId String           @id
-  name       String
-  isActive   Boolean          @default(true)
-  createdAt  DateTime         @default(now())
-  devices    EmployeeDevice[]
+  id             String   @id @default(uuid())
+  organizationId String
+  employeeId     String
+  name           String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  devices    EmployeeDevice[]
   attendance Attendance[]
 
+  @@unique([organizationId, employeeId])
+  @@index([organizationId])
   @@map("employees")
 }
 
 model EmployeeDevice {
   id               String   @id @default(uuid())
+  organizationId   String
   deviceId         String
   employeeId       String
   registrationDate DateTime @db.Date
   createdAt        DateTime @default(now())
 
-  employee Employee @relation(fields: [employeeId], references: [employeeId], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
-  @@unique([deviceId, registrationDate])
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, deviceId, registrationDate])
+  @@index([organizationId])
   @@index([employeeId])
   @@index([deviceId, registrationDate])
   @@map("employee_devices")
@@ -50,6 +80,7 @@ model EmployeeDevice {
 
 model Workplace {
   id                  String   @id @default(uuid())
+  organizationId      String
   name                String
   latitude            Decimal  @db.Decimal(10, 7)
   longitude           Decimal  @db.Decimal(10, 7)
@@ -58,13 +89,17 @@ model Workplace {
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
   attendance Attendance[]
 
+  @@index([organizationId])
   @@map("workplaces")
 }
 
 model Attendance {
   id             String   @id @default(uuid())
+  organizationId String
   employeeId     String
   workplaceId    String
   attendanceDate DateTime
@@ -92,12 +127,12 @@ model Attendance {
 
   createdAt DateTime @default(now())
 
-  // Relationships
-  employee  Employee  @relation(fields: [employeeId], references: [employeeId])
-  workplace Workplace @relation(fields: [workplaceId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  employee     Employee     @relation(fields: [employeeId], references: [id])
+  workplace    Workplace    @relation(fields: [workplaceId], references: [id])
 
-  // Constraints / Indexes
-  @@unique([employeeId, attendanceDate])
+  @@unique([organizationId, employeeId, attendanceDate])
+  @@index([organizationId])
   @@index([employeeId])
   @@index([workplaceId])
   @@index([attendanceDate])

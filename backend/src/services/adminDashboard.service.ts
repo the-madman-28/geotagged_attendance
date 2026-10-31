@@ -1,6 +1,8 @@
 import prisma from "../config/prisma";
 
-export async function getAdminDashboardSummary() {
+export async function getAdminDashboardSummary(
+  organizationId: string
+) {
   const attendanceDate = new Date();
   attendanceDate.setHours(0, 0, 0, 0);
 
@@ -12,22 +14,29 @@ export async function getAdminDashboardSummary() {
     outOfRangeToday,
     autoPunchedOutToday,
   ] = await Promise.all([
-    prisma.employee.count(),
+    prisma.employee.count({
+      where: {
+        organizationId,
+      },
+    }),
 
     prisma.employee.count({
       where: {
+        organizationId,
         isActive: true,
       },
     }),
 
     prisma.attendance.count({
       where: {
+        organizationId,
         attendanceDate,
       },
     }),
 
     prisma.attendance.count({
       where: {
+        organizationId,
         attendanceDate,
         punchOut: null,
       },
@@ -35,6 +44,7 @@ export async function getAdminDashboardSummary() {
 
     prisma.attendance.count({
       where: {
+        organizationId,
         attendanceDate,
         OR: [
           {
@@ -49,6 +59,7 @@ export async function getAdminDashboardSummary() {
 
     prisma.attendance.count({
       where: {
+        organizationId,
         attendanceDate,
         autoPunchedOut: true,
       },

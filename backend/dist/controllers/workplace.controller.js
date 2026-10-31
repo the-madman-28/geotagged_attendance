@@ -12,6 +12,7 @@ async function createWorkplaceController(req, res) {
                 message: "Admin authentication required",
             });
         }
+        const organizationId = req.admin.organizationId;
         const { name, latitude, longitude, radiusMeters, maximumSessionHours, } = req.body;
         if (name === undefined ||
             latitude === undefined ||
@@ -39,6 +40,7 @@ async function createWorkplaceController(req, res) {
             });
         }
         const workplace = await (0, workplace_service_1.createWorkplace)({
+            organizationId,
             name,
             latitude,
             longitude,
@@ -88,7 +90,8 @@ async function getWorkplaceController(req, res) {
                 message: "Admin authentication required",
             });
         }
-        const workplace = await (0, workplace_service_1.getWorkplace)();
+        const organizationId = req.admin.organizationId;
+        const workplace = await (0, workplace_service_1.getWorkplace)(organizationId);
         return res.status(200).json({
             success: true,
             workplace,
@@ -117,6 +120,7 @@ async function updateWorkplaceController(req, res) {
                 message: "Admin authentication required",
             });
         }
+        const organizationId = req.admin.organizationId;
         const { name, latitude, longitude, radiusMeters, maximumSessionHours, } = req.body;
         if (name === undefined ||
             latitude === undefined ||
@@ -144,6 +148,7 @@ async function updateWorkplaceController(req, res) {
             });
         }
         const workplace = await (0, workplace_service_1.updateWorkplace)({
+            organizationId,
             name,
             latitude,
             longitude,
@@ -158,7 +163,8 @@ async function updateWorkplaceController(req, res) {
     }
     catch (error) {
         if (error instanceof Error) {
-            if (error.message === "No active workplace configured") {
+            if (error.message ===
+                "No active workplace configured") {
                 return res.status(404).json({
                     success: false,
                     message: error.message,

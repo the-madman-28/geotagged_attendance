@@ -7,11 +7,12 @@ exports.getTodayAttendance = getTodayAttendance;
 exports.getAttendanceByEmployee = getAttendanceByEmployee;
 exports.getOutOfRangeAttendance = getOutOfRangeAttendance;
 const prisma_1 = __importDefault(require("../config/prisma"));
-async function getTodayAttendance() {
+async function getTodayAttendance(organizationId) {
     const attendanceDate = new Date();
     attendanceDate.setHours(0, 0, 0, 0);
     const attendance = await prisma_1.default.attendance.findMany({
         where: {
+            organizationId,
             attendanceDate,
         },
         orderBy: {
@@ -53,10 +54,25 @@ async function getTodayAttendance() {
     });
     return attendance;
 }
-async function getAttendanceByEmployee(employeeId) {
+async function getAttendanceByEmployee(organizationId, employeeId) {
+    const employee = await prisma_1.default.employee.findUnique({
+        where: {
+            organizationId_employeeId: {
+                organizationId,
+                employeeId,
+            },
+        },
+        select: {
+            id: true,
+        },
+    });
+    if (!employee) {
+        return [];
+    }
     const attendance = await prisma_1.default.attendance.findMany({
         where: {
-            employeeId,
+            organizationId,
+            employeeId: employee.id,
         },
         orderBy: {
             attendanceDate: "desc",
@@ -97,9 +113,10 @@ async function getAttendanceByEmployee(employeeId) {
     });
     return attendance;
 }
-async function getOutOfRangeAttendance() {
+async function getOutOfRangeAttendance(organizationId) {
     const attendance = await prisma_1.default.attendance.findMany({
         where: {
+            organizationId,
             OR: [
                 {
                     punchInStatus: "OUT_OF_RANGE",

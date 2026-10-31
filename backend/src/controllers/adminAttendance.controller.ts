@@ -1,6 +1,6 @@
 import { Response } from "express";
 
-import { AuthenticatedAdminRequest } from "../middleware/adminAuth.middleware";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
 
 import {
   getTodayAttendance,
@@ -9,7 +9,7 @@ import {
 } from "../services/adminAttendance.service";
 
 export async function getTodayAttendanceController(
-  req: AuthenticatedAdminRequest,
+  req: AuthenticatedRequest,
   res: Response
 ) {
   try {
@@ -20,7 +20,11 @@ export async function getTodayAttendanceController(
       });
     }
 
-    const attendance = await getTodayAttendance();
+    const organizationId = req.admin.organizationId;
+
+    const attendance = await getTodayAttendance(
+      organizationId
+    );
 
     return res.status(200).json({
       success: true,
@@ -40,7 +44,7 @@ export async function getTodayAttendanceController(
 }
 
 export async function getAttendanceByEmployeeController(
-  req: AuthenticatedAdminRequest,
+  req: AuthenticatedRequest,
   res: Response
 ) {
   try {
@@ -51,6 +55,7 @@ export async function getAttendanceByEmployeeController(
       });
     }
 
+    const organizationId = req.admin.organizationId;
     const employeeId = req.params.employeeId;
 
     if (
@@ -64,6 +69,7 @@ export async function getAttendanceByEmployeeController(
     }
 
     const attendance = await getAttendanceByEmployee(
+      organizationId,
       employeeId
     );
 
@@ -86,7 +92,7 @@ export async function getAttendanceByEmployeeController(
 }
 
 export async function getOutOfRangeAttendanceController(
-  req: AuthenticatedAdminRequest,
+  req: AuthenticatedRequest,
   res: Response
 ) {
   try {
@@ -97,8 +103,12 @@ export async function getOutOfRangeAttendanceController(
       });
     }
 
+    const organizationId = req.admin.organizationId;
+
     const attendance =
-      await getOutOfRangeAttendance();
+      await getOutOfRangeAttendance(
+        organizationId
+      );
 
     return res.status(200).json({
       success: true,

@@ -10,7 +10,8 @@ async function getAdminDashboardSummaryController(req, res) {
                 message: "Admin authentication required",
             });
         }
-        const summary = await (0, adminDashboard_service_1.getAdminDashboardSummary)();
+        const organizationId = req.admin.organizationId;
+        const summary = await (0, adminDashboard_service_1.getAdminDashboardSummary)(organizationId);
         return res.status(200).json({
             success: true,
             summary,

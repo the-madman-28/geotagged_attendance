@@ -36,8 +36,10 @@ async function adminAuthMiddleware(req, res, next) {
         if (typeof decoded !== "object" ||
             decoded === null ||
             !("adminId" in decoded) ||
+            !("organizationId" in decoded) ||
             !("role" in decoded) ||
             typeof decoded.adminId !== "string" ||
+            typeof decoded.organizationId !== "string" ||
             decoded.role !== "ADMIN") {
             return res.status(401).json({
                 success: false,
@@ -50,6 +52,7 @@ async function adminAuthMiddleware(req, res, next) {
             },
             select: {
                 id: true,
+                organizationId: true,
                 isActive: true,
             },
         });
@@ -65,9 +68,18 @@ async function adminAuthMiddleware(req, res, next) {
                 message: "Admin account is inactive",
             });
         }
+        // Ensure the admin still belongs to the organization
+        // stored in the JWT.
+        if (admin.organizationId !== decoded.organizationId) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid admin organization",
+            });
+        }
         req.admin = {
             adminId: admin.id,
-            role: decoded.role,
+            organizationId: admin.organizationId,
+            role: "ADMIN",
         };
         next();
     }

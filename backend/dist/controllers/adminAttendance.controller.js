@@ -12,7 +12,8 @@ async function getTodayAttendanceController(req, res) {
                 message: "Admin authentication required",
             });
         }
-        const attendance = await (0, adminAttendance_service_1.getTodayAttendance)();
+        const organizationId = req.admin.organizationId;
+        const attendance = await (0, adminAttendance_service_1.getTodayAttendance)(organizationId);
         return res.status(200).json({
             success: true,
             attendance,
@@ -34,6 +35,7 @@ async function getAttendanceByEmployeeController(req, res) {
                 message: "Admin authentication required",
             });
         }
+        const organizationId = req.admin.organizationId;
         const employeeId = req.params.employeeId;
         if (typeof employeeId !== "string" ||
             !employeeId.trim()) {
@@ -42,7 +44,7 @@ async function getAttendanceByEmployeeController(req, res) {
                 message: "Employee ID is required",
             });
         }
-        const attendance = await (0, adminAttendance_service_1.getAttendanceByEmployee)(employeeId);
+        const attendance = await (0, adminAttendance_service_1.getAttendanceByEmployee)(organizationId, employeeId);
         return res.status(200).json({
             success: true,
             employeeId,
@@ -65,7 +67,8 @@ async function getOutOfRangeAttendanceController(req, res) {
                 message: "Admin authentication required",
             });
         }
-        const attendance = await (0, adminAttendance_service_1.getOutOfRangeAttendance)();
+        const organizationId = req.admin.organizationId;
+        const attendance = await (0, adminAttendance_service_1.getOutOfRangeAttendance)(organizationId);
         return res.status(200).json({
             success: true,
             attendance,

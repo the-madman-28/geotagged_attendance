@@ -5,7 +5,13 @@ exports.adminLoginController = adminLoginController;
 const auth_service_1 = require("../services/auth.service");
 async function employeeLoginController(req, res) {
     try {
-        const { employeeId, deviceId } = req.body;
+        const { organizationSlug, employeeId, deviceId, } = req.body;
+        if (!organizationSlug) {
+            return res.status(400).json({
+                success: false,
+                message: "Organization code is required",
+            });
+        }
         if (!employeeId) {
             return res.status(400).json({
                 success: false,
@@ -18,7 +24,7 @@ async function employeeLoginController(req, res) {
                 message: "Device ID is required",
             });
         }
-        const result = await (0, auth_service_1.employeeLogin)(employeeId, deviceId);
+        const result = await (0, auth_service_1.employeeLogin)(organizationSlug, employeeId, deviceId);
         return res.status(200).json({
             success: true,
             message: "Employee login successful",
@@ -27,6 +33,18 @@ async function employeeLoginController(req, res) {
     }
     catch (error) {
         if (error instanceof Error) {
+            if (error.message === "Organization not found") {
+                return res.status(404).json({
+                    success: false,
+                    message: "Invalid organization code",
+                });
+            }
+            if (error.message === "Organization is inactive") {
+                return res.status(403).json({
+                    success: false,
+                    message: "Organization is inactive",
+                });
+            }
             if (error.message === "Employee not found") {
                 return res.status(401).json({
                     success: false,
@@ -82,6 +100,12 @@ async function adminLoginController(req, res) {
                 return res.status(403).json({
                     success: false,
                     message: "Admin account is inactive",
+                });
+            }
+            if (error.message === "Organization is inactive") {
+                return res.status(403).json({
+                    success: false,
+                    message: "Organization is inactive",
                 });
             }
         }

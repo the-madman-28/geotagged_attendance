@@ -1,11 +1,14 @@
 import prisma from "../config/prisma";
 
-export async function getTodayAttendance() {
+export async function getTodayAttendance(
+  organizationId: string
+) {
   const attendanceDate = new Date();
   attendanceDate.setHours(0, 0, 0, 0);
 
   const attendance = await prisma.attendance.findMany({
     where: {
+      organizationId,
       attendanceDate,
     },
     orderBy: {
@@ -56,11 +59,29 @@ export async function getTodayAttendance() {
 }
 
 export async function getAttendanceByEmployee(
+  organizationId: string,
   employeeId: string
 ) {
+  const employee = await prisma.employee.findUnique({
+    where: {
+      organizationId_employeeId: {
+        organizationId,
+        employeeId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!employee) {
+    return [];
+  }
+
   const attendance = await prisma.attendance.findMany({
     where: {
-      employeeId,
+      organizationId,
+      employeeId: employee.id,
     },
     orderBy: {
       attendanceDate: "desc",
@@ -109,9 +130,12 @@ export async function getAttendanceByEmployee(
   return attendance;
 }
 
-export async function getOutOfRangeAttendance() {
+export async function getOutOfRangeAttendance(
+  organizationId: string
+) {
   const attendance = await prisma.attendance.findMany({
     where: {
+      organizationId,
       OR: [
         {
           punchInStatus: "OUT_OF_RANGE",

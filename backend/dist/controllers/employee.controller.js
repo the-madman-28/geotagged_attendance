@@ -15,6 +15,7 @@ async function createEmployeeController(req, res) {
                 message: "Admin authentication required",
             });
         }
+        const organizationId = req.admin.organizationId;
         const { employeeId, name } = req.body;
         if (employeeId === undefined) {
             return res.status(400).json({
@@ -48,6 +49,7 @@ async function createEmployeeController(req, res) {
             });
         }
         const employee = await (0, employee_service_1.createEmployee)({
+            organizationId,
             employeeId,
             name,
         });
@@ -81,7 +83,8 @@ async function getAllEmployeesController(req, res) {
                 message: "Admin authentication required",
             });
         }
-        const employees = await (0, employee_service_1.getAllEmployees)();
+        const organizationId = req.admin.organizationId;
+        const employees = await (0, employee_service_1.getAllEmployees)(organizationId);
         return res.status(200).json({
             success: true,
             employees,
@@ -103,6 +106,7 @@ async function getEmployeeByIdController(req, res) {
                 message: "Admin authentication required",
             });
         }
+        const organizationId = req.admin.organizationId;
         const employeeId = req.params.employeeId;
         if (typeof employeeId !== "string") {
             return res.status(400).json({
@@ -110,7 +114,7 @@ async function getEmployeeByIdController(req, res) {
                 message: "Invalid employee ID",
             });
         }
-        const employee = await (0, employee_service_1.getEmployeeById)(employeeId);
+        const employee = await (0, employee_service_1.getEmployeeById)(organizationId, employeeId);
         return res.status(200).json({
             success: true,
             employee,
@@ -139,27 +143,23 @@ async function updateEmployeeStatusController(req, res) {
                 message: "Admin authentication required",
             });
         }
+        const organizationId = req.admin.organizationId;
         const employeeId = req.params.employeeId;
-        if (typeof employeeId !== "string" || !employeeId.trim()) {
+        if (typeof employeeId !== "string" ||
+            !employeeId.trim()) {
             return res.status(400).json({
                 success: false,
                 message: "Employee ID is required",
             });
         }
         const { isActive } = req.body;
-        if (!employeeId) {
-            return res.status(400).json({
-                success: false,
-                message: "Employee ID is required",
-            });
-        }
         if (typeof isActive !== "boolean") {
             return res.status(400).json({
                 success: false,
                 message: "isActive must be a boolean",
             });
         }
-        const employee = await (0, employee_service_1.updateEmployeeStatus)(employeeId, isActive);
+        const employee = await (0, employee_service_1.updateEmployeeStatus)(organizationId, employeeId, isActive);
         return res.status(200).json({
             success: true,
             message: isActive
@@ -186,13 +186,14 @@ async function updateEmployeeStatusController(req, res) {
 async function getEmployeeProfileController(req, res) {
     try {
         const employeeId = req.employee?.employeeId;
-        if (!employeeId) {
+        const organizationId = req.employee?.organizationId;
+        if (!employeeId || !organizationId) {
             return res.status(401).json({
                 success: false,
                 message: "Employee authentication required",
             });
         }
-        const employee = await (0, employee_service_1.getEmployeeById)(employeeId);
+        const employee = await (0, employee_service_1.getEmployeeById)(organizationId, employeeId);
         return res.status(200).json({
             success: true,
             employee,
@@ -215,14 +216,21 @@ async function getEmployeeProfileController(req, res) {
 }
 async function resetEmployeeDeviceRegistrationController(req, res) {
     try {
+        if (!req.admin) {
+            return res.status(401).json({
+                success: false,
+                message: "Admin authentication required",
+            });
+        }
+        const organizationId = req.admin.organizationId;
         const employeeId = req.params.employeeId;
-        if (!employeeId) {
+        if (typeof employeeId !== "string" || !employeeId.trim()) {
             return res.status(400).json({
                 success: false,
                 message: "Employee ID is required",
             });
         }
-        const result = await (0, employee_service_1.resetEmployeeDeviceRegistration)(employeeId);
+        const result = await (0, employee_service_1.resetEmployeeDeviceRegistration)(organizationId, employeeId);
         return res.status(200).json({
             success: true,
             message: result.deletedCount > 0

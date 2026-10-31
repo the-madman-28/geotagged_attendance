@@ -1,6 +1,7 @@
 import prisma from "../config/prisma";
 
 interface CreateEmployeeData {
+  organizationId: string;
   employeeId: string;
   name: string;
 }
@@ -8,6 +9,7 @@ interface CreateEmployeeData {
 export async function createEmployee(
   data: CreateEmployeeData
 ) {
+  const organizationId = data.organizationId;
   const employeeId = data.employeeId.trim();
   const name = data.name.trim();
 
@@ -22,7 +24,10 @@ export async function createEmployee(
   const existingEmployee =
     await prisma.employee.findUnique({
       where: {
-        employeeId,
+        organizationId_employeeId: {
+          organizationId,
+          employeeId,
+        },
       },
     });
 
@@ -32,6 +37,7 @@ export async function createEmployee(
 
   const employee = await prisma.employee.create({
     data: {
+      organizationId,
       employeeId,
       name,
       isActive: true,
@@ -40,11 +46,19 @@ export async function createEmployee(
 
   return employee;
 }
-export async function getAllEmployees() {
+
+export async function getAllEmployees(
+  organizationId: string
+) {
   const employees = await prisma.employee.findMany({
+    where: {
+      organizationId,
+    },
+
     orderBy: {
       employeeId: "asc",
     },
+
     select: {
       employeeId: true,
       name: true,
@@ -57,12 +71,17 @@ export async function getAllEmployees() {
 }
 
 export async function getEmployeeById(
+  organizationId: string,
   employeeId: string
 ) {
   const employee = await prisma.employee.findUnique({
     where: {
-      employeeId,
+      organizationId_employeeId: {
+        organizationId,
+        employeeId,
+      },
     },
+
     select: {
       employeeId: true,
       name: true,
@@ -79,12 +98,16 @@ export async function getEmployeeById(
 }
 
 export async function updateEmployeeStatus(
+  organizationId: string,
   employeeId: string,
   isActive: boolean
 ) {
   const employee = await prisma.employee.findUnique({
     where: {
-      employeeId,
+      organizationId_employeeId: {
+        organizationId,
+        employeeId,
+      },
     },
   });
 
@@ -94,11 +117,16 @@ export async function updateEmployeeStatus(
 
   const updatedEmployee = await prisma.employee.update({
     where: {
-      employeeId,
+      organizationId_employeeId: {
+        organizationId,
+        employeeId,
+      },
     },
+
     data: {
       isActive,
     },
+
     select: {
       employeeId: true,
       name: true,
@@ -111,11 +139,19 @@ export async function updateEmployeeStatus(
 }
 
 export async function resetEmployeeDeviceRegistration(
+  organizationId: string,
   employeeId: string
 ) {
   const employee = await prisma.employee.findUnique({
     where: {
-      employeeId,
+      organizationId_employeeId: {
+        organizationId,
+        employeeId,
+      },
+    },
+
+    select: {
+      id: true,
     },
   });
 
@@ -128,7 +164,8 @@ export async function resetEmployeeDeviceRegistration(
 
   const result = await prisma.employeeDevice.deleteMany({
     where: {
-      employeeId,
+      organizationId,
+      employeeId: employee.id,
       registrationDate: today,
     },
   });

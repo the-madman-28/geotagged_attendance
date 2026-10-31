@@ -1,12 +1,12 @@
 import { Response } from "express";
+
 import {
   AuthenticatedRequest,
 } from "../middleware/auth.middleware";
+
 import {
   punchIn,
   punchOut,
-  // editPunchIn,
-  // editPunchOut,
   getAttendanceHistory,
   getTodayAttendance,
 } from "../services/attendance.service";
@@ -53,8 +53,9 @@ export async function punchInController(
 ) {
   try {
     const employeeId = req.employee?.employeeId;
+    const organizationId = req.employee?.organizationId;
 
-    if (!employeeId) {
+    if (!employeeId || !organizationId) {
       return res.status(401).json({
         success: false,
         message: "Employee authentication required",
@@ -82,6 +83,7 @@ export async function punchInController(
     }
 
     const result = await punchIn({
+      organizationId,
       employeeId,
       latitude,
       longitude,
@@ -166,8 +168,9 @@ export async function punchOutController(
 ) {
   try {
     const employeeId = req.employee?.employeeId;
+    const organizationId = req.employee?.organizationId;
 
-    if (!employeeId) {
+    if (!employeeId || !organizationId) {
       return res.status(401).json({
         success: false,
         message: "Employee authentication required",
@@ -195,6 +198,7 @@ export async function punchOutController(
     }
 
     const result = await punchOut({
+      organizationId,
       employeeId,
       latitude,
       longitude,
@@ -283,300 +287,31 @@ export async function punchOutController(
 /*
  * EDIT PUNCH IN
  *
- * Only today's attendance can be edited.
+ * Currently disabled.
  * The service layer performs the actual same-day
  * validation and GPS/workplace verification.
  */
+
 // export async function editPunchInController(
 //   req: AuthenticatedRequest,
 //   res: Response
 // ) {
-//   try {
-//     const employeeId = req.employee?.employeeId;
-
-//     if (!employeeId) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Employee authentication required",
-//       });
-//     }
-
-//     const {
-//       latitude,
-//       longitude,
-//       accuracy,
-//       reason,
-//       punchIn,
-//     } = req.body;
-
-//     const gpsError = validateGpsData(
-//       latitude,
-//       longitude,
-//       accuracy
-//     );
-
-//     if (gpsError) {
-//       return res.status(400).json({
-//         success: false,
-//         message: gpsError,
-//       });
-//     }
-
-//     if (punchIn !== undefined) {
-//       if (
-//         typeof punchIn !== "string" ||
-//         Number.isNaN(Date.parse(punchIn))
-//       ) {
-//         return res.status(400).json({
-//           success: false,
-//           message: "Invalid punch in time",
-//         });
-//       }
-//     }
-
-//     const result = await editPunchIn({
-//       employeeId,
-//       latitude,
-//       longitude,
-//       accuracy,
-//       reason,
-//       punchIn,
-//     });
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Punch in updated successfully",
-//       attendance: {
-//         id: result.attendance.id,
-//         employeeId: result.attendance.employeeId,
-//         workplaceId: result.attendance.workplaceId,
-//         attendanceDate:
-//           result.attendance.attendanceDate,
-//         punchIn: result.attendance.punchIn,
-//         punchInLatitude:
-//           result.attendance.punchInLatitude,
-//         punchInLongitude:
-//           result.attendance.punchInLongitude,
-//         punchInAccuracy:
-//           result.attendance.punchInAccuracy,
-//         punchInDistance:
-//           result.attendance.punchInDistance,
-//         punchInStatus:
-//           result.attendance.punchInStatus,
-//         punchInReason:
-//           result.attendance.punchInReason,
-//         punchOut:
-//           result.attendance.punchOut,
-//         autoPunchedOut:
-//           result.attendance.autoPunchedOut,
-//       },
-//     });
-//   } catch (error) {
-//     if (error instanceof Error) {
-//       switch (error.message) {
-//         case "Employee not found":
-//           return res.status(401).json({
-//             success: false,
-//             message: "Employee not found",
-//           });
-
-//         case "Employee account is inactive":
-//           return res.status(403).json({
-//             success: false,
-//             message: "Employee account is inactive",
-//           });
-
-//         case "Attendance has not been marked for today":
-//           return res.status(404).json({
-//             success: false,
-//             message: error.message,
-//           });
-
-//         case "Attendance can only be edited on the same day":
-//           return res.status(403).json({
-//             success: false,
-//             message: error.message,
-//           });
-
-//         case "Attendance cannot be edited after automatic punch out":
-//           return res.status(403).json({
-//             success: false,
-//             message: error.message,
-//           });
-
-//         case "No active workplace configured":
-//           return res.status(503).json({
-//             success: false,
-//             message: "No active workplace configured",
-//           });
-
-//         case "Reason is required when editing punch in outside the workplace":
-//           return res.status(400).json({
-//             success: false,
-//             message: error.message,
-//           });
-//       }
-//     }
-
-//     console.error("Edit punch in error:", error);
-
-//     return res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//     });
-//   }
+//   ...
 // }
 
 /*
  * EDIT PUNCH OUT
  *
- * Only today's attendance can be edited.
+ * Currently disabled.
  * The service layer performs the actual same-day
  * validation and GPS/workplace verification.
  */
+
 // export async function editPunchOutController(
 //   req: AuthenticatedRequest,
 //   res: Response
 // ) {
-//   try {
-//     const employeeId = req.employee?.employeeId;
-
-//     if (!employeeId) {
-//       return res.status(401).json({
-//         success: false,
-//         message: "Employee authentication required",
-//       });
-//     }
-
-//     const {
-//       latitude,
-//       longitude,
-//       accuracy,
-//       reason,
-//       punchOut,
-//     } = req.body;
-
-//     const gpsError = validateGpsData(
-//       latitude,
-//       longitude,
-//       accuracy
-//     );
-
-//     if (gpsError) {
-//       return res.status(400).json({
-//         success: false,
-//         message: gpsError,
-//       });
-//     }
-
-//     if (punchOut !== undefined) {
-//       if (
-//         typeof punchOut !== "string" ||
-//         Number.isNaN(Date.parse(punchOut))
-//       ) {
-//         return res.status(400).json({
-//           success: false,
-//           message: "Invalid punch out time",
-//         });
-//       }
-//     }
-
-//     const result = await editPunchOut({
-//       employeeId,
-//       latitude,
-//       longitude,
-//       accuracy,
-//       reason,
-//       punchOut,
-//     });
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Punch out updated successfully",
-//       attendance: {
-//         id: result.attendance.id,
-//         employeeId: result.attendance.employeeId,
-//         workplaceId: result.attendance.workplaceId,
-//         attendanceDate:
-//           result.attendance.attendanceDate,
-//         punchIn: result.attendance.punchIn,
-//         punchOut: result.attendance.punchOut,
-//         punchOutLatitude:
-//           result.attendance.punchOutLatitude,
-//         punchOutLongitude:
-//           result.attendance.punchOutLongitude,
-//         punchOutAccuracy:
-//           result.attendance.punchOutAccuracy,
-//         punchOutDistance:
-//           result.attendance.punchOutDistance,
-//         punchOutStatus:
-//           result.attendance.punchOutStatus,
-//         punchOutReason:
-//           result.attendance.punchOutReason,
-//         autoPunchedOut:
-//           result.attendance.autoPunchedOut,
-//       },
-//     });
-//   } catch (error) {
-//     if (error instanceof Error) {
-//       switch (error.message) {
-//         case "Employee not found":
-//           return res.status(401).json({
-//             success: false,
-//             message: "Employee not found",
-//           });
-
-//         case "Employee account is inactive":
-//           return res.status(403).json({
-//             success: false,
-//             message: "Employee account is inactive",
-//           });
-
-//         case "Attendance has not been marked for today":
-//           return res.status(404).json({
-//             success: false,
-//             message: error.message,
-//           });
-
-//         case "Punch out has not been marked":
-//           return res.status(400).json({
-//             success: false,
-//             message: error.message,
-//           });
-
-//         case "Attendance can only be edited on the same day":
-//           return res.status(403).json({
-//             success: false,
-//             message: error.message,
-//           });
-
-//         case "Attendance was automatically punched out and cannot be edited":
-//           return res.status(403).json({
-//             success: false,
-//             message: error.message,
-//           });
-
-//         case "No active workplace configured":
-//           return res.status(503).json({
-//             success: false,
-//             message: "No active workplace configured",
-//           });
-
-//         case "Reason is required when editing punch out outside the workplace":
-//           return res.status(400).json({
-//             success: false,
-//             message: error.message,
-//           });
-//       }
-//     }
-
-//     console.error("Edit punch out error:", error);
-
-//     return res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//     });
-//   }
+//   ...
 // }
 
 export async function getAttendanceHistoryController(
@@ -585,8 +320,9 @@ export async function getAttendanceHistoryController(
 ) {
   try {
     const employeeId = req.employee?.employeeId;
+    const organizationId = req.employee?.organizationId;
 
-    if (!employeeId) {
+    if (!employeeId || !organizationId) {
       return res.status(401).json({
         success: false,
         message: "Employee authentication required",
@@ -594,6 +330,7 @@ export async function getAttendanceHistoryController(
     }
 
     const attendance = await getAttendanceHistory(
+      organizationId,
       employeeId
     );
 
@@ -620,16 +357,19 @@ export async function getTodayAttendanceController(
 ) {
   try {
     const employeeId = req.employee?.employeeId;
+    const organizationId = req.employee?.organizationId;
 
-    if (!employeeId) {
+    if (!employeeId || !organizationId) {
       return res.status(401).json({
         success: false,
         message: "Employee authentication required",
       });
     }
 
-    const attendance =
-      await getTodayAttendance(employeeId);
+    const attendance = await getTodayAttendance(
+      organizationId,
+      employeeId
+    );
 
     return res.status(200).json({
       success: true,

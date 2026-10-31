@@ -1,6 +1,7 @@
 import prisma from "../config/prisma";
 
 interface CreateWorkplaceData {
+  organizationId: string;
   name: string;
   latitude: number;
   longitude: number;
@@ -46,6 +47,7 @@ export async function createWorkplace(
   const existingActiveWorkplace =
     await prisma.workplace.findFirst({
       where: {
+        organizationId: data.organizationId,
         isActive: true,
       },
     });
@@ -58,6 +60,7 @@ export async function createWorkplace(
 
   const workplace = await prisma.workplace.create({
     data: {
+      organizationId: data.organizationId,
       name,
       latitude: data.latitude,
       longitude: data.longitude,
@@ -71,11 +74,15 @@ export async function createWorkplace(
   return workplace;
 }
 
-export async function getWorkplace() {
+export async function getWorkplace(
+  organizationId: string
+) {
   const workplace = await prisma.workplace.findFirst({
     where: {
+      organizationId,
       isActive: true,
     },
+
     select: {
       id: true,
       name: true,
@@ -96,6 +103,7 @@ export async function getWorkplace() {
 }
 
 interface UpdateWorkplaceData {
+  organizationId: string;
   name: string;
   latitude: number;
   longitude: number;
@@ -140,6 +148,7 @@ export async function updateWorkplace(
 
   const workplace = await prisma.workplace.findFirst({
     where: {
+      organizationId: data.organizationId,
       isActive: true,
     },
   });
@@ -153,6 +162,7 @@ export async function updateWorkplace(
       where: {
         id: workplace.id,
       },
+
       data: {
         name,
         latitude: data.latitude,

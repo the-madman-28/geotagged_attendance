@@ -1,6 +1,7 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Response } from "express";
 import jwt from "jsonwebtoken";
-import prisma from "../config/prisma";  
+import prisma from "../config/prisma";
+import { AuthenticatedRequest } from "./auth.middleware";
 
 const JWT_SECRET: string = process.env.JWT_SECRET ?? "";
 
@@ -8,15 +9,8 @@ if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not configured");
 }
 
-export interface AuthenticatedAdminRequest extends Request {
-  admin?: {
-    adminId: string;
-    role: string;
-  };
-}
-
 export async function adminAuthMiddleware(
-  req: AuthenticatedAdminRequest,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) {
@@ -52,8 +46,10 @@ export async function adminAuthMiddleware(
       typeof decoded !== "object" ||
       decoded === null ||
       !("adminId" in decoded) ||
+      !("organizationId" in decoded) ||
       !("role" in decoded) ||
       typeof decoded.adminId !== "string" ||
+      typeof decoded.organizationId !== "string" ||
       decoded.role !== "ADMIN"
     ) {
       return res.status(401).json({
@@ -68,6 +64,7 @@ export async function adminAuthMiddleware(
       },
       select: {
         id: true,
+        organizationId: true,
         isActive: true,
       },
     });
@@ -86,9 +83,19 @@ export async function adminAuthMiddleware(
       });
     }
 
+    // Ensure the admin still belongs to the organization
+    // stored in the JWT.
+    if (admin.organizationId !== decoded.organizationId) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid admin organization",
+      });
+    }
+
     req.admin = {
       adminId: admin.id,
-      role: decoded.role,
+      organizationId: admin.organizationId,
+      role: "ADMIN",
     };
 
     next();

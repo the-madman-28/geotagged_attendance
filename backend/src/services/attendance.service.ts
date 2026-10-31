@@ -2,6 +2,7 @@ import prisma from "../config/prisma";
 import { calculateDistance } from "../utils/geolocation";
 
 interface PunchInData {
+  organizationId: string;
   employeeId: string;
   latitude: number;
   longitude: number;
@@ -11,6 +12,7 @@ interface PunchInData {
 
 export async function punchIn(data: PunchInData) {
   const {
+    organizationId,
     employeeId,
     latitude,
     longitude,
@@ -18,9 +20,14 @@ export async function punchIn(data: PunchInData) {
     reason,
   } = data;
 
+  // employeeId here is the human-facing employee ID.
+  // Find the employee inside the authenticated organization.
   const employee = await prisma.employee.findUnique({
     where: {
-      employeeId,
+      organizationId_employeeId: {
+        organizationId,
+        employeeId,
+      },
     },
   });
 
@@ -32,8 +39,10 @@ export async function punchIn(data: PunchInData) {
     throw new Error("Employee account is inactive");
   }
 
+  // Find active workplace belonging to this organization.
   const workplace = await prisma.workplace.findFirst({
     where: {
+      organizationId,
       isActive: true,
     },
   });
@@ -63,14 +72,15 @@ export async function punchIn(data: PunchInData) {
   }
 
   const attendanceDate = new Date();
-
   attendanceDate.setHours(0, 0, 0, 0);
 
+  // Attendance is unique per organization + employee + date.
   const existingAttendance =
     await prisma.attendance.findUnique({
       where: {
-        employeeId_attendanceDate: {
-          employeeId,
+        organizationId_employeeId_attendanceDate: {
+          organizationId,
+          employeeId: employee.id,
           attendanceDate,
         },
       },
@@ -84,7 +94,11 @@ export async function punchIn(data: PunchInData) {
 
   const attendance = await prisma.attendance.create({
     data: {
-      employeeId,
+      organizationId,
+
+      // Attendance FK uses the internal Employee UUID.
+      employeeId: employee.id,
+
       workplaceId: workplace.id,
       attendanceDate,
 
@@ -112,6 +126,7 @@ export async function punchIn(data: PunchInData) {
 }
 
 interface PunchOutData {
+  organizationId: string;
   employeeId: string;
   latitude: number;
   longitude: number;
@@ -121,6 +136,7 @@ interface PunchOutData {
 
 export async function punchOut(data: PunchOutData) {
   const {
+    organizationId,
     employeeId,
     latitude,
     longitude,
@@ -130,7 +146,10 @@ export async function punchOut(data: PunchOutData) {
 
   const employee = await prisma.employee.findUnique({
     where: {
-      employeeId,
+      organizationId_employeeId: {
+        organizationId,
+        employeeId,
+      },
     },
   });
 
@@ -143,13 +162,13 @@ export async function punchOut(data: PunchOutData) {
   }
 
   const attendanceDate = new Date();
-
   attendanceDate.setHours(0, 0, 0, 0);
 
   const attendance = await prisma.attendance.findUnique({
     where: {
-      employeeId_attendanceDate: {
-        employeeId,
+      organizationId_employeeId_attendanceDate: {
+        organizationId,
+        employeeId: employee.id,
         attendanceDate,
       },
     },
@@ -167,8 +186,11 @@ export async function punchOut(data: PunchOutData) {
     );
   }
 
+  // Use the workplace associated with today's attendance.
   const workplace = await prisma.workplace.findFirst({
     where: {
+      id: attendance.workplaceId,
+      organizationId,
       isActive: true,
     },
   });
@@ -227,15 +249,35 @@ export async function punchOut(data: PunchOutData) {
 }
 
 export async function getAttendanceHistory(
+  organizationId: string,
   employeeId: string
 ) {
+  const employee = await prisma.employee.findUnique({
+    where: {
+      organizationId_employeeId: {
+        organizationId,
+        employeeId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!employee) {
+    throw new Error("Employee not found");
+  }
+
   const attendance = await prisma.attendance.findMany({
     where: {
-      employeeId,
+      organizationId,
+      employeeId: employee.id,
     },
+
     orderBy: {
       attendanceDate: "desc",
     },
+
     select: {
       id: true,
       employeeId: true,
@@ -275,16 +317,33 @@ export async function getAttendanceHistory(
 }
 
 export async function getTodayAttendance(
+  organizationId: string,
   employeeId: string
 ) {
-  const attendanceDate = new Date();
+  const employee = await prisma.employee.findUnique({
+    where: {
+      organizationId_employeeId: {
+        organizationId,
+        employeeId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
 
+  if (!employee) {
+    throw new Error("Employee not found");
+  }
+
+  const attendanceDate = new Date();
   attendanceDate.setHours(0, 0, 0, 0);
 
   return prisma.attendance.findUnique({
     where: {
-      employeeId_attendanceDate: {
-        employeeId,
+      organizationId_employeeId_attendanceDate: {
+        organizationId,
+        employeeId: employee.id,
         attendanceDate,
       },
     },
