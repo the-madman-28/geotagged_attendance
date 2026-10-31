@@ -8,6 +8,7 @@ import adminEmployeeRoutes from "./routes/adminEmployee.routes";
 import workplaceRoutes from "./routes/workplace.routes";
 import adminAttendanceRoutes from "./routes/adminAttendance.routes";
 import adminDashboardRoutes from "./routes/adminDashboard.routes";
+import platformAdminRoutes from "./routes/platformAdmin.routes";
 
 const app = express();
 
@@ -68,6 +69,8 @@ app.use(
   }
 );
 
+
+app.use("/api/platform", platformAdminRoutes);
 
 
 export default app;

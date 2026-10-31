@@ -27,6 +27,16 @@ model Organization {
   @@map("organizations")
 }
 
+model PlatformAdmin {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@map("platform_admins")
+}
+
 model Admin {
   id             String   @id @default(uuid())
   organizationId String

@@ -184,3 +184,117 @@ export async function adminLogin(
     },
   };
 }
+
+export async function adminSignup({
+  organizationName,
+  organizationSlug,
+  email,
+  password,
+}: {
+  organizationName: string;
+  organizationSlug: string;
+  email: string;
+  password: string;
+}) {
+  const normalizedName = organizationName.trim();
+  const normalizedSlug = organizationSlug
+    .trim()
+    .toLowerCase();
+
+  const normalizedEmail = email
+    .trim()
+    .toLowerCase();
+
+  if (!normalizedName) {
+    throw new Error("Organization name is required");
+  }
+
+  if (!normalizedSlug) {
+    throw new Error("Organization slug is required");
+  }
+
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalizedSlug)) {
+    throw new Error(
+      "Organization slug can contain only lowercase letters, numbers, and hyphens"
+    );
+  }
+
+  if (!normalizedEmail) {
+    throw new Error("Email is required");
+  }
+
+  if (password.length < 8) {
+    throw new Error(
+      "Password must be at least 8 characters"
+    );
+  }
+
+  const existingOrganization =
+    await prisma.organization.findUnique({
+      where: {
+        slug: normalizedSlug,
+      },
+    });
+
+  if (existingOrganization) {
+    throw new Error(
+      "An organization with this slug already exists"
+    );
+  }
+
+  const existingAdmin = await prisma.admin.findUnique({
+    where: {
+      email: normalizedEmail,
+    },
+  });
+
+  if (existingAdmin) {
+    throw new Error(
+      "An admin with this email already exists"
+    );
+  }
+
+  const passwordHash = await bcrypt.hash(
+    password,
+    12
+  );
+
+  const result = await prisma.$transaction(
+    async (tx) => {
+      const organization =
+        await tx.organization.create({
+          data: {
+            name: normalizedName,
+            slug: normalizedSlug,
+            isActive: true,
+          },
+        });
+
+      const admin = await tx.admin.create({
+        data: {
+          organizationId: organization.id,
+          email: normalizedEmail,
+          passwordHash,
+          isActive: true,
+        },
+      });
+
+      return {
+        organization,
+        admin,
+      };
+    }
+  );
+
+  return {
+    organization: {
+      id: result.organization.id,
+      name: result.organization.name,
+      slug: result.organization.slug,
+    },
+    admin: {
+      id: result.admin.id,
+      email: result.admin.email,
+    },
+  };
+}

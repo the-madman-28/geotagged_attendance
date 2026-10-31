@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   employeeLogin,
   adminLogin,
+  adminSignup,
 } from "../services/auth.service";
 
 export async function employeeLoginController(
@@ -144,6 +145,79 @@ export async function adminLoginController(
     }
 
     console.error("Admin login error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+export async function adminSignupController(
+  req: Request,
+  res: Response
+) {
+  try {
+    const {
+      organizationName,
+      organizationSlug,
+      email,
+      password,
+      confirmPassword,
+    } = req.body;
+
+    if (
+      !organizationName ||
+      !organizationSlug ||
+      !email ||
+      !password ||
+      !confirmPassword
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match",
+      });
+    }
+
+    const result = await adminSignup({
+      organizationName,
+      organizationSlug,
+      email,
+      password,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message:
+        "Organization and admin account created successfully",
+      ...result,
+    });
+  } catch (error) {
+    console.error("Admin signup error:", error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unable to create admin account";
+
+    if (
+      message.includes("already exists") ||
+      message.includes("required") ||
+      message.includes("slug") ||
+      message.includes("Password")
+    ) {
+      return res.status(400).json({
+        success: false,
+        message,
+      });
+    }
 
     return res.status(500).json({
       success: false,

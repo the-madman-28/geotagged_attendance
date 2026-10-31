@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
 import {
   adminLogin,
@@ -146,6 +147,17 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Sign in"}
             </button>
           </form>
+          <div className="mt-6 border-t border-slate-100 pt-6 text-center">
+  <p className="text-sm text-slate-500">
+    Don't have an admin account?{" "}
+    <Link
+      href="/signup"
+      className="font-semibold text-slate-900 hover:underline"
+    >
+      Sign up
+    </Link>
+  </p>
+</div>
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-400">
