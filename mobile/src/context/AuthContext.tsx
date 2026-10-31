@@ -21,16 +21,19 @@ import {
   clearSessionExpiredHandler,
 } from "../services/authSession.service";
 
-import { employeeLogin } from "../api/auth";
+import { employeeLogin as employeeLoginApi } from "../api/auth";
 import { Employee } from "../types/auth";
 
 interface AuthContextValue {
   token: string | null;
   employee: Employee | null;
   loading: boolean;
+
   employeeLogin: (
+    organizationSlug: string,
     employeeId: string
   ) => Promise<void>;
+
   logout: () => Promise<void>;
 }
 
@@ -95,32 +98,39 @@ export function AuthProvider({
     }
   }
 
-async function login(employeeId: string) {
-  let deviceId: string | null = null;
+  async function login(
+    organizationSlug: string,
+    employeeId: string
+  ) {
+    let deviceId: string | null = null;
 
-  if (Platform.OS === "android") {
-    deviceId = Application.getAndroidId();
-  } else if (Platform.OS === "ios") {
-    deviceId = await Application.getIosIdForVendorAsync();
+    if (Platform.OS === "android") {
+      deviceId = Application.getAndroidId();
+    } else if (Platform.OS === "ios") {
+      deviceId =
+        await Application.getIosIdForVendorAsync();
+    }
+
+    if (!deviceId) {
+      throw new Error(
+        "Unable to identify this device"
+      );
+    }
+
+    const result = await employeeLoginApi(
+      organizationSlug,
+      employeeId,
+      deviceId
+    );
+
+    await saveAuthData(
+      result.token,
+      result.employee
+    );
+
+    setToken(result.token);
+    setEmployee(result.employee);
   }
-
-  if (!deviceId) {
-    throw new Error("Unable to identify this device");
-  }
-
-  const result = await employeeLogin(
-    employeeId,
-    deviceId
-  );
-
-  await saveAuthData(
-    result.token,
-    result.employee
-  );
-
-  setToken(result.token);
-  setEmployee(result.employee);
-}
 
   async function logout() {
     await clearAuthData();

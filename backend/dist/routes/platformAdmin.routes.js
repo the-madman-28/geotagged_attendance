@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const platformAdmin_controller_1 = require("../controllers/platformAdmin.controller");
+const platformAuth_middleware_1 = require("../middleware/platformAuth.middleware");
+const router = (0, express_1.Router)();
+router.post("/login", platformAdmin_controller_1.platformAdminLoginController);
+router.get("/organizations", platformAuth_middleware_1.platformAuthMiddleware, platformAdmin_controller_1.getOrganizationsController);
+router.post("/admins", platformAuth_middleware_1.platformAuthMiddleware, platformAdmin_controller_1.createOrganizationAdminController);
+exports.default = router;

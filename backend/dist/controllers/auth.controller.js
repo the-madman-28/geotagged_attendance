@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.employeeLoginController = employeeLoginController;
 exports.adminLoginController = adminLoginController;
+exports.adminSignupController = adminSignupController;
 const auth_service_1 = require("../services/auth.service");
 async function employeeLoginController(req, res) {
     try {
@@ -110,6 +111,57 @@ async function adminLoginController(req, res) {
             }
         }
         console.error("Admin login error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+}
+async function adminSignupController(req, res) {
+    try {
+        const { organizationName, organizationSlug, email, password, confirmPassword, } = req.body;
+        if (!organizationName ||
+            !organizationSlug ||
+            !email ||
+            !password ||
+            !confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required",
+            });
+        }
+        if (password !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Passwords do not match",
+            });
+        }
+        const result = await (0, auth_service_1.adminSignup)({
+            organizationName,
+            organizationSlug,
+            email,
+            password,
+        });
+        return res.status(201).json({
+            success: true,
+            message: "Organization and admin account created successfully",
+            ...result,
+        });
+    }
+    catch (error) {
+        console.error("Admin signup error:", error);
+        const message = error instanceof Error
+            ? error.message
+            : "Unable to create admin account";
+        if (message.includes("already exists") ||
+            message.includes("required") ||
+            message.includes("slug") ||
+            message.includes("Password")) {
+            return res.status(400).json({
+                success: false,
+                message,
+            });
+        }
         return res.status(500).json({
             success: false,
             message: "Internal server error",

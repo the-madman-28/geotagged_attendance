@@ -12,6 +12,7 @@ const adminEmployee_routes_1 = __importDefault(require("./routes/adminEmployee.r
 const workplace_routes_1 = __importDefault(require("./routes/workplace.routes"));
 const adminAttendance_routes_1 = __importDefault(require("./routes/adminAttendance.routes"));
 const adminDashboard_routes_1 = __importDefault(require("./routes/adminDashboard.routes"));
+const platformAdmin_routes_1 = __importDefault(require("./routes/platformAdmin.routes"));
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -41,4 +42,5 @@ app.use((error, _req, res, _next) => {
         message: "Internal server error",
     });
 });
+app.use("/api/platform", platformAdmin_routes_1.default);
 exports.default = app;

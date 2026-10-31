@@ -2,6 +2,7 @@ import { apiRequest } from "./client";
 import { EmployeeLoginResponse } from "../types/auth";
 
 export async function employeeLogin(
+  organizationSlug: string,
   employeeId: string,
   deviceId: string
 ): Promise<EmployeeLoginResponse> {
@@ -10,6 +11,7 @@ export async function employeeLogin(
     {
       method: "POST",
       body: {
+        organizationSlug,
         employeeId,
         deviceId,
       },
